@@ -696,13 +696,17 @@ if (navCopyLinkBtn) {
 }
 
 // Sound Toggle
-if (soundToggleBtn) {
-  soundToggleBtn.addEventListener('click', () => {
-    const muted = window.soundFx.toggleMute();
-    soundToggleBtn.innerText = muted ? '🔇' : '🔊';
-    showToast(muted ? 'Sound Muted' : 'Sound Unmuted');
-  });
+function handleToggleSound() {
+  const muted = window.soundFx.toggleMute();
+  const icon = document.getElementById('dock-sound-icon');
+  if (icon) icon.innerText = muted ? '🔇' : '🔊';
+  if (soundToggleBtn) soundToggleBtn.innerText = muted ? '🔇' : '🔊';
+  showToast(muted ? 'Sound Muted' : 'Sound Unmuted');
 }
+
+if (soundToggleBtn) soundToggleBtn.addEventListener('click', handleToggleSound);
+const dockBtnSound = document.getElementById('dock-btn-sound');
+if (dockBtnSound) dockBtnSound.addEventListener('click', handleToggleSound);
 
 // Rules Modal
 if (rulesModalBtn) rulesModalBtn.addEventListener('click', () => modalRules && modalRules.classList.remove('hidden'));

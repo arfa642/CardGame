@@ -16,70 +16,28 @@
   <link rel="stylesheet" href="/css/style.css">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>👑</text></svg>">
 </head>
-<body class="text-slate-100 min-h-screen flex flex-col justify-between selection:bg-amber-400 selection:text-black pb-20 sm:pb-0">
+<body class="text-slate-100 min-h-screen flex flex-col justify-between selection:bg-amber-400 selection:text-black">
 
-  <!-- ================= TOP MOBILE GAMING HEADER BAR ================= -->
-  <header class="w-full bg-slate-950/80 backdrop-blur-md border-b-2 border-amber-500/30 px-3 py-2 flex items-center justify-between z-40 sticky top-0 shadow-lg">
-    <!-- Player Profile Chip (Clickable to Edit) -->
-    <div id="btn-open-profile" class="flex items-center gap-2 cursor-pointer bg-slate-900/90 hover:bg-slate-800/90 border border-amber-500/40 rounded-full py-1 px-2.5 transition transform hover:scale-105 active:scale-95 shadow-md">
-      <div class="profile-avatar-frame flex-shrink-0">
-        <span id="header-avatar-emoji">🦊</span>
-        <span class="profile-level-badge">LV 12</span>
-      </div>
-      <div class="leading-tight pr-1">
-        <div class="flex items-center gap-1">
-          <span id="header-player-name" class="font-extrabold text-xs text-white truncate max-w-[80px] sm:max-w-[120px]">Player</span>
-          <span class="text-[10px]">🇵🇰</span>
-        </div>
-        <div class="text-[9px] font-bold text-amber-400 tracking-wider uppercase flex items-center gap-1">
-          <span>👑 VIP</span>
-          <span class="text-slate-400">• Edit</span>
-        </div>
-      </div>
-    </div>
+  <!-- Floating In-Game Room Share Pill (visible only when in room) -->
+  <div id="nav-room-pill" class="hidden fixed top-3 right-3 z-50 items-center gap-1.5 bg-slate-950/95 border-2 border-amber-500/50 rounded-full px-3 py-1.5 text-xs shadow-2xl">
+    <span class="text-slate-400 text-[10px] font-bold">Room:</span>
+    <span id="nav-room-code" class="font-black text-amber-400 font-mono tracking-wider">------</span>
+    <button id="nav-copy-link-btn" title="Copy Invite Link" class="text-slate-300 hover:text-white transition p-0.5">
+      📋
+    </button>
+  </div>
 
-    <!-- Currency & Utility Badges (Coins, Gems, Sound, Room Pill) -->
-    <div class="flex items-center gap-1.5 sm:gap-2.5">
-      <!-- In-Game Room Share Pill (visible when in room) -->
-      <div id="nav-room-pill" class="hidden items-center gap-1.5 bg-slate-900/95 border-2 border-amber-500/50 rounded-full px-2.5 py-1 text-xs shadow-md">
-        <span class="text-slate-400 text-[10px] font-bold">Room:</span>
-        <span id="nav-room-code" class="font-black text-amber-400 font-mono tracking-wider">------</span>
-        <button id="nav-copy-link-btn" title="Copy Invite Link" class="text-slate-300 hover:text-white transition p-0.5">
-          📋
-        </button>
-      </div>
-
-      <!-- Coins Pill -->
-      <div class="currency-pill cursor-pointer hover:border-amber-300 transition" title="Your Coins">
-        <span class="text-sm">🪙</span>
-        <span id="user-coins-display" class="font-black tracking-wide text-amber-300 text-xs">50,000</span>
-        <span class="pill-add-btn">+</span>
-      </div>
-
-      <!-- Gems Pill (Hidden on ultra-small screens) -->
-      <div class="currency-pill hidden sm:inline-flex border-sky-400/80 cursor-pointer hover:border-sky-300 transition" title="Your Gems">
-        <span class="text-sm">💎</span>
-        <span class="font-black tracking-wide text-sky-300 text-xs">120</span>
-        <span class="pill-add-btn bg-sky-500 border-sky-300">+</span>
-      </div>
-
-      <!-- Sound Toggle -->
-      <button id="sound-toggle-btn" class="w-8 h-8 rounded-full bg-slate-800/90 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs flex items-center justify-center transition shadow" title="Toggle Sound">
-        🔊
-      </button>
-
-      <!-- Rules Guide Button -->
-      <button id="rules-modal-btn" class="w-8 h-8 rounded-full bg-slate-800/90 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs flex items-center justify-center transition shadow" title="Rules & Guide">
-        📖
-      </button>
-    </div>
-  </header>
+  <!-- Hidden elements retained for JS compatibility -->
+  <div class="hidden">
+    <span id="user-coins-display">50,000</span>
+    <button id="rules-modal-btn"></button>
+  </div>
 
   <!-- ================= NOTIFICATION TOAST ================= -->
   <div id="toast-container" class="fixed top-16 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 pointer-events-none w-full max-w-sm px-4"></div>
 
   <!-- ================= SCREEN 1: LANDING VIEW ================= -->
-  <main id="screen-landing" class="flex-1 flex flex-col items-center justify-start p-3 sm:p-5 max-w-5xl mx-auto w-full">
+  <main id="screen-landing" class="flex-1 flex flex-col items-center justify-start p-3 sm:p-5 pb-36 max-w-5xl mx-auto w-full">
     
     <!-- Hero Brand Title (ThullaKing 👑) -->
     <div class="text-center my-3 sm:my-4">
@@ -90,9 +48,16 @@
         <span class="text-3xl sm:text-5xl">👑</span>
         <span class="bg-gradient-to-r from-amber-300 via-amber-400 to-yellow-500 bg-clip-text text-transparent">THULLA</span><span class="text-white drop-shadow-[0_2px_4px_rgba(251,191,36,0.6)]">KING</span>
       </h2>
-      <p class="text-slate-300 text-xs sm:text-sm font-semibold max-w-md mx-auto mt-1 opacity-90">
+      <p class="text-slate-300 text-xs sm:text-sm font-semibold max-w-md mx-auto mt-1 mb-2 opacity-90">
         Challenge 4 players worldwide, create private tables for friends, or practice with smart AI bots!
       </p>
+
+      <!-- Compact Player Profile Chip (Click to Edit Profile) -->
+      <div id="btn-open-profile" class="inline-flex items-center gap-2 cursor-pointer bg-red-950/85 hover:bg-red-900/80 border-2 border-amber-500/40 rounded-full py-1 px-3.5 transition transform hover:scale-105 active:scale-95 shadow-lg">
+        <span id="header-avatar-emoji" class="text-lg">🦊</span>
+        <span id="header-player-name" class="font-extrabold text-xs text-amber-300">Player</span>
+        <span class="text-[10px] text-slate-300 font-bold">• ✏️ Profile</span>
+      </div>
     </div>
 
     <!-- Mode Switcher Tabs (3 Big Arcade Mode Buttons) -->
@@ -147,23 +112,23 @@
         </div>
 
         <!-- Card 2: Bluff Worldwide -->
-        <div class="game-card-3d p-5 flex flex-col justify-between group border-purple-500/40">
+        <div class="game-card-3d p-5 flex flex-col justify-between group border-sky-500/40">
           <div>
             <div class="flex items-center justify-between mb-2">
-              <span class="text-3xl p-2 rounded-xl bg-purple-500/20 border border-purple-500/30">🤫</span>
-              <span id="badge-queue-bluff" class="game-card-header-badge bg-gradient-to-r from-purple-500 to-indigo-600 text-white border-purple-800">
+              <span class="text-3xl p-2 rounded-xl bg-sky-500/20 border border-sky-500/30">🤫</span>
+              <span id="badge-queue-bluff" class="game-card-header-badge bg-gradient-to-r from-sky-500 to-blue-600 text-white border-blue-800">
                 0 in queue
               </span>
             </div>
-            <h4 class="text-xl font-black text-white group-hover:text-purple-400 transition mt-2">Bluff Worldwide</h4>
+            <h4 class="text-xl font-black text-white group-hover:text-sky-400 transition mt-2">Bluff Worldwide</h4>
             <p class="text-xs text-slate-300 mt-1 mb-4 leading-relaxed font-medium">
               4-Player Cheat / 420 tournament with players worldwide. Place face-down cards, bluff boldly or call your opponents!
             </p>
-            <div class="text-[11px] text-purple-200/90 bg-purple-500/10 p-2.5 rounded-xl mb-4 border border-purple-500/20 flex items-center gap-2 font-semibold">
+            <div class="text-[11px] text-sky-200/90 bg-sky-500/10 p-2.5 rounded-xl mb-4 border border-sky-500/20 flex items-center gap-2 font-semibold">
               <span class="text-sm">⚡</span> 4 Players • Instant Auto-Start on 4/4
             </div>
           </div>
-          <button id="btn-queue-bluff" class="thulla-btn-purple w-full py-3 text-xs sm:text-sm font-black flex items-center justify-center gap-2 uppercase tracking-wide">
+          <button id="btn-queue-bluff" class="thulla-btn-blue w-full py-3 text-xs sm:text-sm font-black flex items-center justify-center gap-2 uppercase tracking-wide">
             <span>🌐</span> Find Bluff Match
           </button>
         </div>
@@ -234,19 +199,19 @@
         </div>
 
         <!-- Card 2: Bluff Friends -->
-        <div class="game-card-3d p-5 flex flex-col justify-between group border-purple-500/40">
+        <div class="game-card-3d p-5 flex flex-col justify-between group border-sky-500/40">
           <div>
             <div class="flex items-center justify-between mb-2">
-              <span class="text-3xl p-2 rounded-xl bg-purple-500/20 border border-purple-500/30">🤫</span>
-              <span class="game-card-header-badge bg-gradient-to-r from-purple-500 to-indigo-600 text-white border-purple-800">Mind Game</span>
+              <span class="text-3xl p-2 rounded-xl bg-sky-500/20 border border-sky-500/30">🤫</span>
+              <span class="game-card-header-badge bg-gradient-to-r from-sky-500 to-blue-600 text-white border-blue-800">Mind Game</span>
             </div>
-            <h4 class="text-xl font-black text-white group-hover:text-purple-400 transition mt-2">Bluff Table</h4>
+            <h4 class="text-xl font-black text-white group-hover:text-sky-400 transition mt-2">Bluff Table</h4>
             <p class="text-xs text-slate-300 mt-1 mb-4 leading-relaxed font-medium">
               Private room for 2 to 6 friends. Lie without flinching and call your friends' bluff!
             </p>
             <div class="bg-slate-900/80 p-2.5 rounded-xl border border-slate-700 mb-4 flex justify-between items-center text-xs">
               <span class="text-slate-300 font-bold">Capacity:</span>
-              <select id="friends-bluff-players" class="bg-slate-800 border border-slate-600 rounded-lg px-2.5 py-1 text-purple-400 font-bold focus:outline-none">
+              <select id="friends-bluff-players" class="bg-slate-800 border border-slate-600 rounded-lg px-2.5 py-1 text-sky-400 font-bold focus:outline-none">
                 <option value="2">2 Players</option>
                 <option value="3">3 Players</option>
                 <option value="4" selected>4 Players</option>
@@ -255,7 +220,7 @@
               </select>
             </div>
           </div>
-          <button id="btn-create-bluff" class="thulla-btn-purple w-full py-3 text-xs sm:text-sm font-black uppercase">
+          <button id="btn-create-bluff" class="thulla-btn-blue w-full py-3 text-xs sm:text-sm font-black uppercase">
             Create Bluff Table
           </button>
         </div>
@@ -342,18 +307,18 @@
         </div>
 
         <!-- Card 2: Bluff vs Bots -->
-        <div class="game-card-3d p-5 flex flex-col justify-between group border-purple-500/40">
+        <div class="game-card-3d p-5 flex flex-col justify-between group border-sky-500/40">
           <div>
             <div class="flex items-center justify-between mb-2">
-              <span class="text-3xl p-2 rounded-xl bg-purple-500/20 border border-purple-500/30">🤫</span>
-              <span class="game-card-header-badge bg-gradient-to-r from-purple-500 to-indigo-600 text-white border-purple-800">Instant Solo</span>
+              <span class="text-3xl p-2 rounded-xl bg-sky-500/20 border border-sky-500/30">🤫</span>
+              <span class="game-card-header-badge bg-gradient-to-r from-sky-500 to-blue-600 text-white border-blue-800">Instant Solo</span>
             </div>
-            <h4 class="text-xl font-black text-white group-hover:text-purple-400 transition mt-2">Bluff vs Bots</h4>
+            <h4 class="text-xl font-black text-white group-hover:text-sky-400 transition mt-2">Bluff vs Bots</h4>
             <p class="text-xs text-slate-300 mt-1 mb-4 leading-relaxed font-medium">
               Place secret cards, test the bots' bluff detector instincts, and catch them lying red-handed!
             </p>
           </div>
-          <button id="btn-bots-bluff" class="thulla-btn-purple w-full py-3 text-xs sm:text-sm font-black uppercase">
+          <button id="btn-bots-bluff" class="thulla-btn-blue w-full py-3 text-xs sm:text-sm font-black uppercase">
             ▶ Play Bluff vs Bots
           </button>
         </div>
@@ -404,6 +369,11 @@
     <button id="dock-btn-rules" class="dock-item-btn" title="Game Rules">
       <span class="dock-icon">📖</span>
       <span>Rules</span>
+    </button>
+
+    <button id="dock-btn-sound" class="dock-item-btn" title="Toggle Sound">
+      <span id="dock-sound-icon" class="dock-icon">🔊</span>
+      <span>Sound</span>
     </button>
   </nav>
 
