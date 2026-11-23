@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Thulla Card Game - Online Multiplayer & Bots</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Canvas Confetti for Victory Celebration -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎴</text></svg>">
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between selection:bg-amber-500 selection:text-black">
+
+  <!-- ================= TOP NAVIGATION BAR ================= -->
+  <header class="w-full bg-slate-900/80 backdrop-blur border-b border-slate-800 px-4 py-3 flex items-center justify-between z-40">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-600 to-amber-400 flex items-center justify-center text-xl shadow-lg shadow-amber-500/20">
+        🎴
+      </div>
+      <div>
+        <h1 class="font-extrabold text-lg tracking-wide bg-gradient-to-r from-amber-400 to-amber-200 bg-clip-text text-transparent">
+          THULLA
+        </h1>
+        <p class="text-[10px] text-slate-400 font-medium tracking-wider uppercase">Bhabhi • Online Multiplayer</p>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <!-- In-Game Room Share Pill (visible when in room) -->
+      <div id="nav-room-pill" class="hidden items-center gap-2 bg-slate-800/90 border border-slate-700/80 rounded-full px-3 py-1 text-xs">
+        <span class="text-slate-400">Room:</span>
+        <span id="nav-room-code" class="font-bold text-amber-400 tracking-wider">------</span>
+        <button id="nav-copy-link-btn" title="Copy Invite Link" class="text-slate-300 hover:text-white transition p-1">
+          📋
+        </button>
+      </div>
+
+      <!-- Sound Toggle -->
+      <button id="sound-toggle-btn" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-sm transition" title="Toggle Sound">
+        🔊
+      </button>
+
+      <!-- Rules Guide Button -->
+      <button id="rules-modal-btn" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-semibold text-slate-200 transition flex items-center gap-1.5">
+        <span>📖</span> Rules
+      </button>
+    </div>
+  </header>
+
+  <!-- ================= NOTIFICATION TOAST ================= -->
+  <div id="toast-container" class="fixed top-16 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 pointer-events-none w-full max-w-sm px-4"></div>
+
+  <!-- ================= SCREEN 1: LANDING VIEW ================= -->
+  <main id="screen-landing" class="flex-1 flex flex-col items-center justify-center p-4 max-w-4xl mx-auto w-full">
+    <!-- Hero Header -->
+    <div class="text-center mb-8">
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-semibold mb-3">
+        ✨ 2 to 10 Players • Shareable Room Links • AI Bots
+      </div>
+      <h2 class="text-3xl sm:text-5xl font-black tracking-tight text-white mb-2">
+        The Authentic <span class="bg-gradient-to-r from-amber-400 to-amber-200 bg-clip-text text-transparent">Thulla</span> Card Game
+      </h2>
+      <p class="text-slate-400 text-sm sm:text-base max-w-lg mx-auto">
+        Shed all your cards and don't get caught! Play online with friends worldwide via shareable table links or challenge smart AI bots.
+      </p>
+    </div>
+
+    <!-- 1-Click Quick Play Solo vs Bots Button -->
+    <div class="w-full max-w-md mb-6">
+      <button id="quick-play-btn" class="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-black text-base shadow-lg shadow-emerald-500/30 transition transform hover:-translate-y-0.5 flex items-center justify-center gap-3">
+        <span class="text-xl">⚡</span> Quick Play vs Bots (1-Click Start)
+      </button>
+    </div>
+
+    <!-- Cards Grid: Create Table & Join Table -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-2xl">
+      <!-- Create Room Panel -->
+      <div class="glass-panel p-6 flex flex-col justify-between">
+        <div>
+          <div class="flex items-center gap-2 mb-4">
+            <span class="text-2xl">👑</span>
+            <h3 class="font-bold text-lg text-white">Create New Table</h3>
+          </div>
+
+          <div class="space-y-4">
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1.5">Your Name</label>
+              <input type="text" id="create-player-name" placeholder="Enter nickname" maxlength="14"
+                class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition">
+            </div>
+
+            <!-- Avatar Picker -->
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1.5">Pick Avatar</label>
+              <div id="avatar-picker-create" class="flex gap-2 overflow-x-auto pb-1">
+                <!-- Avatars rendered via JS -->
+              </div>
+            </div>
+
+            <!-- Table Capacity (2-10 Players) -->
+            <div>
+              <div class="flex justify-between items-center text-xs font-medium text-slate-300 mb-1.5">
+                <span>Max Players (2 - 10)</span>
+                <span id="player-capacity-label" class="text-amber-400 font-bold">4 Players</span>
+              </div>
+              <input type="range" id="create-max-players" min="2" max="10" value="4"
+                class="w-full accent-amber-500 cursor-pointer">
+            </div>
+
+            <!-- Deck Mode -->
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1.5">Deck Mode</label>
+              <select id="create-deck-mode" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500">
+                <option value="auto">Auto (1 Deck for ≤5, 2 Decks for >5)</option>
+                <option value="1">Single Deck (52 cards)</option>
+                <option value="2">Double Deck (104 cards)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <button id="create-room-btn" class="casino-btn w-full mt-6 py-3 text-sm">
+          Create Table & Invite Link
+        </button>
+      </div>
+
+      <!-- Join Room Panel -->
+      <div class="glass-panel p-6 flex flex-col justify-between">
+        <div>
+          <div class="flex items-center gap-2 mb-4">
+            <span class="text-2xl">🚪</span>
+            <h3 class="font-bold text-lg text-white">Join Existing Table</h3>
+          </div>
+
+          <div class="space-y-4">
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1.5">Room Code</label>
+              <input type="text" id="join-room-code" placeholder="e.g. K9X2P4" maxlength="6"
+                class="w-full uppercase font-mono tracking-widest text-center text-base bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-amber-400 font-bold focus:outline-none focus:border-amber-500 transition">
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1.5">Your Name</label>
+              <input type="text" id="join-player-name" placeholder="Enter nickname" maxlength="14"
+                class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition">
+            </div>
+
+            <!-- Avatar Picker -->
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1.5">Pick Avatar</label>
+              <div id="avatar-picker-join" class="flex gap-2 overflow-x-auto pb-1">
+                <!-- Avatars rendered via JS -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <button id="join-room-btn" class="casino-btn secondary w-full mt-6 py-3 text-sm font-bold">
+          Join Table
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <!-- ================= SCREEN 2: LOBBY VIEW ================= -->
+  <main id="screen-lobby" class="hidden flex-1 flex flex-col items-center justify-center p-4 max-w-4xl mx-auto w-full">
+    <div class="glass-panel w-full max-w-xl p-6 sm:p-8">
+      <!-- Header with Room Code & Share Link -->
+      <div class="text-center mb-6 border-b border-slate-800 pb-5">
+        <span class="text-xs font-bold tracking-widest text-slate-400 uppercase">Table Room Code</span>
+        <div class="flex items-center justify-center gap-3 my-2">
+          <span id="lobby-room-code" class="text-4xl font-black font-mono tracking-widest text-amber-400">------</span>
+          <button id="lobby-copy-code-btn" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 transition" title="Copy Room Code">
+            📋
+          </button>
+        </div>
+
+        <!-- Shareable Link Card -->
+        <div class="mt-3 flex items-center justify-center gap-2 bg-slate-900/90 border border-slate-700/80 rounded-xl p-2 px-3">
+          <span id="lobby-share-link" class="text-xs text-slate-300 truncate max-w-xs font-mono">http://...</span>
+          <button id="lobby-copy-link-btn" class="casino-btn py-1 px-3 text-xs flex-shrink-0">
+            Copy Invite Link
+          </button>
+        </div>
+        <p class="text-[11px] text-slate-400 mt-2">Send this link to friends so they can join instantly from any device!</p>
+      </div>
+
+      <!-- Player Count & Seated Players List -->
+      <div class="mb-6">
+        <div class="flex justify-between items-center mb-3">
+          <h4 class="text-sm font-bold text-slate-200">Seated Players</h4>
+          <span id="lobby-player-count-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">
+            0 / 4 Players
+          </span>
+        </div>
+
+        <div id="lobby-players-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- Bot Management Controls (Host Only) -->
+      <div id="host-controls" class="border-t border-slate-800 pt-5 space-y-4">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold text-slate-300">AI Bot Controls:</span>
+          <div class="flex gap-2">
+            <button id="btn-add-bot" class="casino-btn secondary text-xs py-1.5 px-3">
+              + Add Bot
+            </button>
+            <button id="btn-remove-bot" class="casino-btn secondary text-xs py-1.5 px-3 text-red-400 border-red-500/30">
+              - Remove Bot
+            </button>
+            <button id="btn-fill-bots" class="casino-btn secondary text-xs py-1.5 px-3 text-amber-300 border-amber-500/30">
+              Fill Table (Bots)
+            </button>
+          </div>
+        </div>
+
+        <!-- Start Game Button -->
+        <button id="btn-start-game" class="casino-btn w-full py-3.5 text-base shadow-lg shadow-amber-500/20">
+          ▶ Start Match
+        </button>
+      </div>
+
+      <!-- Non-host waiting message -->
+      <div id="guest-waiting-msg" class="hidden border-t border-slate-800 pt-5 text-center text-slate-400 text-sm animate-pulse">
+        ⏳ Waiting for host to start the match...
+      </div>
+    </div>
+  </main>
+
+  <!-- ================= SCREEN 3: IN-GAME TABLE VIEW ================= -->
+  <main id="screen-game" class="hidden flex-1 relative w-full flex flex-col justify-between overflow-hidden">
+    <!-- Top HUD Status Bar -->
+    <div class="w-full px-4 pt-2 pb-1 flex items-center justify-between z-20">
+      <!-- Active Led Suit Indicator -->
+      <div class="flex items-center gap-2">
+        <div id="led-suit-indicator" class="flex items-center gap-1.5 bg-slate-900/90 border border-slate-700/80 rounded-xl px-3 py-1 text-xs font-semibold">
+          <span class="text-slate-400">Led Suit:</span>
+          <span id="led-suit-badge" class="font-extrabold text-slate-300">None</span>
+        </div>
+        <div class="bg-slate-900/90 border border-slate-700/80 rounded-xl px-3 py-1 text-xs font-semibold text-slate-400">
+          Discarded: <span id="discard-count-badge" class="text-amber-400 font-bold">0</span>
+        </div>
+      </div>
+
+      <!-- Turn Notice Banner -->
+      <div id="turn-notice-banner" class="px-4 py-1.5 rounded-full bg-slate-800/90 border border-slate-700 text-xs font-bold text-slate-200 shadow-md">
+        Waiting...
+      </div>
+
+      <!-- Quick Reaction Trigger & Chat -->
+      <div class="flex items-center gap-2">
+        <button id="open-chat-btn" class="p-2 rounded-xl bg-slate-800/90 border border-slate-700 text-slate-300 hover:text-white text-xs font-bold transition flex items-center gap-1">
+          💬 <span id="chat-badge" class="hidden w-2 h-2 rounded-full bg-red-500"></span>
+        </button>
+      </div>
+    </div>
+
+    <!-- The Poker Table Container -->
+    <div class="poker-table-container">
+      <div class="poker-table">
+        <div class="felt-ring"></div>
+
+        <!-- Center Trick Area -->
+        <div class="trick-table" id="trick-table">
+          <!-- Trick Cards dynamically rendered here -->
+        </div>
+
+        <!-- Dynamic THULLA Banner Blast -->
+        <div id="thulla-banner" class="thulla-banner">
+          💥 THULLA!
+          <div id="thulla-banner-sub" class="text-xs font-bold text-yellow-200 mt-1 uppercase tracking-normal"></div>
+        </div>
+      </div>
+
+      <!-- Seats Layer around Table (2 to 10 players) -->
+      <div class="seats-layer" id="seats-layer">
+        <!-- Rendered by math in JS -->
+      </div>
+    </div>
+
+    <!-- Reactions Tray (Float above hand) -->
+    <div class="w-full flex justify-center gap-2 pb-1 z-30">
+      <div class="bg-slate-900/85 backdrop-blur border border-slate-700/80 rounded-full px-3 py-1 flex items-center gap-2 shadow-lg">
+        <span class="text-[10px] text-slate-400 uppercase font-bold mr-1">React:</span>
+        <button class="reaction-btn hover:scale-125 transition text-base" data-emoji="🔥">🔥</button>
+        <button class="reaction-btn hover:scale-125 transition text-base" data-emoji="😂">😂</button>
+        <button class="reaction-btn hover:scale-125 transition text-base" data-emoji="💥">💥</button>
+        <button class="reaction-btn hover:scale-125 transition text-base" data-emoji="🃏">🃏</button>
+        <button class="reaction-btn hover:scale-125 transition text-base" data-emoji="💀">💀</button>
+        <button class="reaction-btn hover:scale-125 transition text-base" data-emoji="👏">👏</button>
+      </div>
+    </div>
+
+    <!-- Bottom User Hand Tray -->
+    <div class="user-hand-tray">
+      <div class="flex items-center justify-between w-full max-w-xl px-2 mb-1">
+        <span class="text-xs font-bold text-amber-400">Your Hand (<span id="user-hand-count">0</span> cards)</span>
+        <span id="hand-turn-hint" class="text-[11px] text-slate-400 font-medium">Select a highlighted card to play</span>
+      </div>
+
+      <div class="cards-container" id="user-cards-container">
+        <!-- Hand cards rendered here -->
+      </div>
+    </div>
+  </main>
+
+  <!-- ================= IN-GAME CHAT DRAWER ================= -->
+  <div id="chat-drawer" class="hidden fixed bottom-20 right-4 w-80 max-w-[90vw] glass-panel z-50 flex flex-col overflow-hidden shadow-2xl border border-slate-700">
+    <div class="bg-slate-900/90 px-4 py-2.5 border-b border-slate-800 flex items-center justify-between">
+      <span class="text-xs font-bold text-slate-200">Table Chat</span>
+      <button id="close-chat-btn" class="text-slate-400 hover:text-white text-xs">✕</button>
+    </div>
+    <div id="chat-messages" class="p-3 h-52 overflow-y-auto space-y-2 text-xs">
+      <!-- Chat messages -->
+    </div>
+    <form id="chat-form" class="p-2 border-t border-slate-800 flex gap-2 bg-slate-900/90">
+      <input type="text" id="chat-input" placeholder="Type a message..." maxlength="120"
+        class="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500">
+      <button type="submit" class="casino-btn py-1 px-3 text-xs">Send</button>
+    </form>
+  </div>
+
+  <!-- ================= MODAL: GAME OVER & PODIUM ================= -->
+  <div id="modal-game-over" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div class="glass-panel w-full max-w-lg p-6 sm:p-8 text-center relative border border-amber-500/30">
+      <div class="text-5xl mb-2">🏆</div>
+      <h3 class="text-2xl sm:text-3xl font-black text-amber-400 mb-1">MATCH COMPLETED!</h3>
+      <p class="text-slate-400 text-xs sm:text-sm mb-6">Here are the final standings for this round:</p>
+
+      <!-- Winners Podium -->
+      <div id="podium-list" class="space-y-2 mb-6 max-h-56 overflow-y-auto text-left">
+        <!-- Filled by JS -->
+      </div>
+
+      <!-- Loser Spotlight (The Thulla) -->
+      <div id="loser-spotlight" class="p-4 rounded-xl bg-red-950/40 border border-red-500/30 mb-6">
+        <span class="text-xs font-bold uppercase tracking-widest text-red-400">The THULLA (Bhabhi) 🤡</span>
+        <div id="loser-name" class="text-xl font-black text-white mt-1">Player Name</div>
+        <p class="text-xs text-red-300/80 mt-0.5">Caught with the remaining cards!</p>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex gap-3 justify-center">
+        <button id="btn-play-again" class="casino-btn py-2.5 px-6 text-sm">
+          🔄 Play Again
+        </button>
+        <button id="btn-back-lobby" class="casino-btn secondary py-2.5 px-5 text-sm">
+          Back to Lobby
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: HOW TO PLAY THULLA ================= -->
+  <div id="modal-rules" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div class="glass-panel w-full max-w-xl p-6 sm:p-8 relative max-h-[85vh] overflow-y-auto border border-slate-700">
+      <button id="close-rules-btn" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg">✕</button>
+
+      <div class="flex items-center gap-2 mb-4">
+        <span class="text-3xl">📖</span>
+        <h3 class="text-xl font-black text-amber-400">How to Play Thulla (Bhabhi)</h3>
+      </div>
+
+      <div class="space-y-4 text-xs sm:text-sm text-slate-300 leading-relaxed">
+        <div class="bg-slate-900/60 p-3.5 rounded-xl border border-slate-800">
+          <h4 class="font-bold text-white mb-1 flex items-center gap-1.5">
+            🎯 Objective
+          </h4>
+          <p>The goal is to <strong>shed all of your cards</strong>. The first player to finish their cards wins 1st place! The last remaining player left with cards is declared the <strong>"Thulla" (Bhabhi)</strong> and loses the game.</p>
+        </div>
+
+        <div class="bg-slate-900/60 p-3.5 rounded-xl border border-slate-800">
+          <h4 class="font-bold text-white mb-1 flex items-center gap-1.5">
+            ♠️ The Opening Move
+          </h4>
+          <p>All cards are dealt equally. The player who holds the <strong>Ace of Spades (♠A)</strong> MUST lead with it on the very first trick.</p>
+        </div>
+
+        <div class="bg-slate-900/60 p-3.5 rounded-xl border border-slate-800">
+          <h4 class="font-bold text-white mb-1 flex items-center gap-1.5">
+            ⚖️ Following Suit
+          </h4>
+          <p>When a player leads a card of a suit, every other player in clockwise turn <strong>MUST follow that suit</strong> if they hold any card of it.</p>
+        </div>
+
+        <div class="bg-red-950/30 p-3.5 rounded-xl border border-red-500/30">
+          <h4 class="font-bold text-red-400 mb-1 flex items-center gap-1.5">
+            💥 What is a THULLA?
+          </h4>
+          <p>If you do <strong>NOT</strong> have any card of the led suit, you can throw ANY card from your hand! That card is called a <strong>THULLA</strong>.</p>
+          <ul class="list-disc list-inside mt-2 space-y-1 text-slate-300">
+            <li>The player who threw the <strong>highest card of the led suit</strong> in that trick must <strong>pick up all cards</strong> currently on the table into their hand!</li>
+            <li>The player who hit the Thulla gets the next lead!</li>
+          </ul>
+        </div>
+
+        <div class="bg-slate-900/60 p-3.5 rounded-xl border border-slate-800">
+          <h4 class="font-bold text-white mb-1 flex items-center gap-1.5">
+            ✨ Normal Trick Win (No Thulla)
+          </h4>
+          <p>If all active players follow suit without any Thulla, the player with the highest card of the led suit wins the trick. Those cards are permanently discarded to the dead pile, and the winner leads the next round!</p>
+        </div>
+      </div>
+
+      <button id="close-rules-btn-bottom" class="casino-btn w-full mt-6 py-2.5 text-sm">
+        Got It, Let's Play!
+      </button>
+    </div>
+  </div>
+
+  <!-- Socket.io client -->
+  <script src="/socket.io/socket.io.js"></script>
+  <!-- Audio Effects -->
+  <script src="/js/audio.js"></script>
+  <!-- Client App Logic -->
+  <script src="/js/app.js"></script>
+</body>
+</html>

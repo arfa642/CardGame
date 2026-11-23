@@ -1,0 +1,378 @@
+/* 
+ * Thulla Card Game - Modern Casino / Green Felt Stylesheet
+ */
+
+:root {
+  --bg-dark: #0b1319;
+  --felt-green: #0d4a36;
+  --felt-dark: #082f23;
+  --table-border: #8d6228;
+  --table-border-inner: #4a3314;
+  --gold-accent: #f59e0b;
+  --card-width: 72px;
+  --card-height: 104px;
+  --card-radius: 8px;
+}
+
+@media (min-width: 768px) {
+  :root {
+    --card-width: 86px;
+    --card-height: 124px;
+    --card-radius: 10px;
+  }
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background-color: var(--bg-dark);
+  color: #f3f4f6;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Glassmorphism card panels */
+.glass-panel {
+  background: rgba(18, 28, 38, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+  border-radius: 18px;
+}
+
+/* Casino Table */
+.poker-table-container {
+  position: relative;
+  width: 100%;
+  max-width: 1100px;
+  height: 580px;
+  margin: 0 auto;
+}
+
+@media (min-width: 1024px) {
+  .poker-table-container {
+    height: 640px;
+  }
+}
+
+.poker-table {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 90%;
+  height: 82%;
+  background: radial-gradient(ellipse at center, #136046 0%, var(--felt-green) 50%, var(--felt-dark) 100%);
+  border: 16px solid var(--table-border);
+  box-shadow: 
+    inset 0 0 40px rgba(0, 0, 0, 0.8),
+    0 10px 30px rgba(0, 0, 0, 0.9),
+    0 0 0 4px var(--table-border-inner);
+  border-radius: 200px / 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+}
+
+.felt-ring {
+  position: absolute;
+  width: 82%;
+  height: 75%;
+  border: 2px dashed rgba(245, 158, 11, 0.25);
+  border-radius: 170px / 95px;
+  pointer-events: none;
+}
+
+/* Seats Positioning */
+.seats-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.player-seat {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: auto;
+  transition: all 0.3s ease;
+  z-index: 10;
+}
+
+.avatar-badge {
+  position: relative;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #1e293b;
+  border: 3px solid #475569;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+  transition: all 0.3s ease;
+}
+
+.player-seat.current-turn .avatar-badge {
+  border-color: #fbbf24;
+  box-shadow: 0 0 20px #fbbf24, 0 0 40px rgba(251, 191, 36, 0.4);
+  animation: turnPulse 1.4s infinite alternate;
+}
+
+@keyframes turnPulse {
+  0% { transform: scale(1); filter: drop-shadow(0 0 5px #fbbf24); }
+  100% { transform: scale(1.1); filter: drop-shadow(0 0 15px #f59e0b); }
+}
+
+.player-info-tag {
+  margin-top: 4px;
+  background: rgba(15, 23, 42, 0.9);
+  padding: 3px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  max-width: 100px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.card-count-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+  padding: 1px 6px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+/* Card Styles */
+.playing-card {
+  width: var(--card-width);
+  height: var(--card-height);
+  background: #ffffff;
+  border-radius: var(--card-radius);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  position: relative;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 6px;
+  font-weight: 800;
+  border: 1px solid #cbd5e1;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+.playing-card.red {
+  color: #dc2626;
+}
+
+.playing-card.black {
+  color: #0f172a;
+}
+
+.card-corner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1;
+  font-size: 15px;
+}
+
+.card-corner.bottom {
+  transform: rotate(180deg);
+}
+
+.card-center-suit {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 32px;
+  opacity: 0.9;
+}
+
+/* User Hand Tray */
+.user-hand-tray {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to top, rgba(11, 19, 25, 0.98) 60%, rgba(11, 19, 25, 0));
+  padding: 20px 10px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 50;
+}
+
+.cards-container {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  max-width: 95vw;
+  overflow-x: auto;
+  overflow-y: visible;
+  padding: 15px 10px 5px;
+}
+
+/* Overlapping hand cards */
+.hand-card {
+  margin-left: -32px;
+  transform-origin: bottom center;
+}
+
+.hand-card:first-child {
+  margin-left: 0;
+}
+
+.hand-card.valid-card {
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.7), 0 8px 20px rgba(0, 0, 0, 0.5);
+  border: 2px solid #fbbf24;
+}
+
+.hand-card.valid-card:hover {
+  transform: translateY(-22px) scale(1.08) !important;
+  z-index: 100 !important;
+  box-shadow: 0 0 25px rgba(245, 158, 11, 0.9), 0 12px 30px rgba(0, 0, 0, 0.7);
+}
+
+.hand-card.disabled-card {
+  filter: brightness(0.5) grayscale(0.6);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Center Trick Table */
+.trick-table {
+  position: relative;
+  width: 260px;
+  height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.trick-card-wrapper {
+  position: absolute;
+  transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* THULLA Alert Banner */
+.thulla-banner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+  color: #fff;
+  padding: 16px 36px;
+  border-radius: 20px;
+  font-size: 28px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  box-shadow: 0 0 50px rgba(239, 68, 68, 0.9), 0 10px 30px rgba(0, 0, 0, 0.8);
+  border: 4px solid #fef08a;
+  z-index: 200;
+  text-align: center;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.thulla-banner.show {
+  animation: thullaBlast 2.2s forwards cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes thullaBlast {
+  0% { transform: translate(-50%, -50%) scale(0.2) rotate(-15deg); opacity: 0; }
+  15% { transform: translate(-50%, -50%) scale(1.15) rotate(5deg); opacity: 1; }
+  25% { transform: translate(-50%, -50%) scale(1) rotate(0deg); opacity: 1; }
+  75% { transform: translate(-50%, -50%) scale(1) rotate(0deg); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(0.5) translateY(-60px); opacity: 0; }
+}
+
+/* Floating Reactions */
+.floating-reaction {
+  position: absolute;
+  font-size: 36px;
+  pointer-events: none;
+  z-index: 250;
+  animation: floatUp 1.8s forwards ease-out;
+}
+
+@keyframes floatUp {
+  0% { transform: translateY(0) scale(0.6); opacity: 0; }
+  20% { transform: translateY(-20px) scale(1.2); opacity: 1; }
+  80% { transform: translateY(-70px) scale(1); opacity: 1; }
+  100% { transform: translateY(-110px) scale(0.8); opacity: 0; }
+}
+
+/* Button & Controls */
+.casino-btn {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: #000;
+  font-weight: 800;
+  border-radius: 12px;
+  padding: 10px 20px;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(245, 158, 11, 0.35);
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.casino-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.55);
+}
+
+.casino-btn:active {
+  transform: translateY(1px);
+}
+
+.casino-btn.secondary {
+  background: rgba(30, 41, 59, 0.8);
+  color: #e2e8f0;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+}
+
+.casino-btn.secondary:hover {
+  background: rgba(51, 65, 85, 0.9);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
