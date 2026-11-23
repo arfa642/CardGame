@@ -263,19 +263,42 @@ function updateCoinsDisplay() {
   }
 }
 
+function getPlayerStats() {
+  const wins = parseInt(localStorage.getItem('thullaking_wins') || '0', 10);
+  const losses = parseInt(localStorage.getItem('thullaking_losses') || '0', 10);
+  const total = wins + losses;
+  const winRate = total > 0 ? Math.round((wins / total) * 100) : 0;
+  return { wins, losses, total, winRate };
+}
+
+function updateStatsUI() {
+  const stats = getPlayerStats();
+  const elWins = document.getElementById('stat-wins-count');
+  const elLosses = document.getElementById('stat-losses-count');
+  const elRate = document.getElementById('stat-win-rate');
+  if (elWins) elWins.innerText = stats.wins;
+  if (elLosses) elLosses.innerText = stats.losses;
+  if (elRate) elRate.innerText = `${stats.winRate}%`;
+}
+
 function updateProfileUI() {
   const savedName = localStorage.getItem('thulla_player_name') || 'Player';
   const savedAvatar = localStorage.getItem('thulla_player_avatar') || selectedAvatar;
+  const bannerName = document.getElementById('banner-player-name');
+  const bannerAvatar = document.getElementById('banner-avatar-emoji');
   const headerName = document.getElementById('header-player-name');
   const headerAvatar = document.getElementById('header-avatar-emoji');
   const modalAvatarPreview = document.getElementById('modal-profile-avatar-preview');
   const globalInput = document.getElementById('global-player-name');
 
+  if (bannerName) bannerName.innerText = savedName;
+  if (bannerAvatar) bannerAvatar.innerText = savedAvatar;
   if (headerName) headerName.innerText = savedName;
   if (headerAvatar) headerAvatar.innerText = savedAvatar;
   if (modalAvatarPreview) modalAvatarPreview.innerText = savedAvatar;
   if (globalInput) globalInput.value = savedName;
 
+  updateStatsUI();
   updateCoinsDisplay();
 }
 
@@ -578,15 +601,26 @@ if (btnQueueBluff) btnQueueBluff.addEventListener('click', () => startMatchmakin
 if (btnQueueRang) btnQueueRang.addEventListener('click', () => startMatchmaking('rang'));
 if (btnCancelMatchmaking) btnCancelMatchmaking.addEventListener('click', () => cancelMatchmaking());
 
-// Profile Edit Modal
+// Profile Edit Modal & Settings
 const btnOpenProfile = document.getElementById('btn-open-profile');
+const btnOpenSettings = document.getElementById('btn-open-settings');
+const btnAvatarClick = document.getElementById('btn-avatar-click');
 const modalProfileEdit = document.getElementById('modal-profile-edit');
 const btnSaveProfile = document.getElementById('btn-save-profile');
+const btnCloseProfile = document.getElementById('btn-close-profile');
 
-if (btnOpenProfile && modalProfileEdit) {
-  btnOpenProfile.addEventListener('click', () => {
-    updateProfileUI();
-    modalProfileEdit.classList.remove('hidden');
+const openProfileModal = () => {
+  updateProfileUI();
+  if (modalProfileEdit) modalProfileEdit.classList.remove('hidden');
+};
+
+if (btnOpenProfile) btnOpenProfile.addEventListener('click', openProfileModal);
+if (btnOpenSettings) btnOpenSettings.addEventListener('click', openProfileModal);
+if (btnAvatarClick) btnAvatarClick.addEventListener('click', openProfileModal);
+
+if (btnCloseProfile && modalProfileEdit) {
+  btnCloseProfile.addEventListener('click', () => {
+    modalProfileEdit.classList.add('hidden');
   });
 }
 
@@ -1295,9 +1329,47 @@ function triggerThullaEffect(action) {
   thullaBanner.classList.add('show');
 }
 
+let lastRecordedGameOverKey = null;
+
+function recordGameResult(state) {
+  if (!state) return;
+  const winnersStr = (state.winners || []).map(w => w.id).join('-');
+  const loserStr = state.loser ? state.loser.id : 'none';
+  const gameKey = `${state.roomId || 'room'}_${state.turnNumber || 0}_${winnersStr}_${loserStr}`;
+  if (lastRecordedGameOverKey === gameKey) return;
+  lastRecordedGameOverKey = gameKey;
+
+  const totalPlayers = (state.players && state.players.length > 0) ? state.players.length : 4;
+  const myWinnerRecord = state.winners ? state.winners.find(w => w.id === myPlayerId) : null;
+  const isLoser = state.loser && state.loser.id === myPlayerId;
+
+  let isWin = false;
+  if (myWinnerRecord) {
+    // Rule: 1st and 2nd for 4+ players, 1st for 2-3 players
+    if (totalPlayers >= 4) {
+      if (myWinnerRecord.rank <= 2) isWin = true;
+    } else {
+      if (myWinnerRecord.rank === 1) isWin = true;
+    }
+  }
+
+  if (isWin) {
+    const curWins = parseInt(localStorage.getItem('thullaking_wins') || '0', 10);
+    localStorage.setItem('thullaking_wins', (curWins + 1).toString());
+  } else if (isLoser) {
+    const curLosses = parseInt(localStorage.getItem('thullaking_losses') || '0', 10);
+    localStorage.setItem('thullaking_losses', (curLosses + 1).toString());
+  }
+
+  updateStatsUI();
+}
+
 // Render Game Over Modal with Confetti
 function renderGameOverModal(state) {
   modalGameOver.classList.remove('hidden');
+
+  // Record win/loss stats in player banner
+  recordGameResult(state);
 
   // Launch celebratory confetti
   if (window.confetti) {
