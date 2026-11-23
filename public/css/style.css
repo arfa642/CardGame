@@ -168,6 +168,8 @@ body {
 .playing-card {
   width: var(--card-width);
   height: var(--card-height);
+  min-width: var(--card-width) !important;
+  flex-shrink: 0 !important;
   background: #ffffff;
   border-radius: var(--card-radius);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
@@ -198,6 +200,18 @@ body {
   font-size: 15px;
 }
 
+.card-corner.top {
+  position: absolute;
+  top: 3px;
+  left: 4px;
+  background: rgba(255, 255, 255, 0.85);
+  padding: 1px 3px;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  font-weight: 900;
+  z-index: 5;
+}
+
 .card-corner.bottom {
   transform: rotate(180deg);
 }
@@ -217,8 +231,8 @@ body {
   bottom: 0;
   left: 0;
   right: 0;
-  background: linear-gradient(to top, rgba(11, 19, 25, 0.98) 60%, rgba(11, 19, 25, 0));
-  padding: 20px 10px 14px;
+  background: linear-gradient(to top, rgba(11, 19, 25, 0.98) 75%, rgba(11, 19, 25, 0));
+  padding: 12px 6px 12px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -227,22 +241,26 @@ body {
 
 .cards-container {
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: flex-end;
-  max-width: 95vw;
+  width: 100%;
+  max-width: 100vw;
   overflow-x: auto;
   overflow-y: visible;
-  padding: 15px 10px 5px;
+  padding: 18px 24px 8px;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
 }
 
-/* Overlapping hand cards */
+/* Smooth overlapping hand cards */
 .hand-card {
-  margin-left: -32px;
+  margin-left: -26px;
   transform-origin: bottom center;
+  flex-shrink: 0 !important;
 }
 
 .hand-card:first-child {
-  margin-left: 0;
+  margin-left: 0 !important;
 }
 
 .hand-card.valid-card {

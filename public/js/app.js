@@ -15,6 +15,7 @@ let selectedAvatar = '🦊';
 let isTrickFrozen = false;
 let trickFreezeTimer = null;
 let selectedBluffCardIds = new Set();
+let activeSuitFilter = 'ALL';
 
 // Avatars list
 const AVATARS = ['🦊', '🐼', '🦁', '🐯', '🤖', '🦄', '🐸', '🧙', '🥷', '🚀'];
@@ -762,16 +763,67 @@ function renderTrick(trick, highlightCardId = null, highlightClass = '') {
   });
 }
 
-// Render User's Hand
+// Render User's Hand (optimized for 2-3 players and large hands)
 function renderUserHand(hand, validCards, isMyTurn) {
   userCardsContainer.innerHTML = '';
 
+  // Update Suit Tab Counts
+  const countAll = hand.length;
+  const countSpades = hand.filter(c => c.suit === '♠').length;
+  const countHearts = hand.filter(c => c.suit === '♥').length;
+  const countDiamonds = hand.filter(c => c.suit === '♦').length;
+  const countClubs = hand.filter(c => c.suit === '♣').length;
+
+  const tabAll = document.getElementById('tab-count-all');
+  const tabSpades = document.getElementById('tab-count-spades');
+  const tabHearts = document.getElementById('tab-count-hearts');
+  const tabDiamonds = document.getElementById('tab-count-diamonds');
+  const tabClubs = document.getElementById('tab-count-clubs');
+
+  if (tabAll) tabAll.innerText = countAll;
+  if (tabSpades) tabSpades.innerText = countSpades;
+  if (tabHearts) tabHearts.innerText = countHearts;
+  if (tabDiamonds) tabDiamonds.innerText = countDiamonds;
+  if (tabClubs) tabClubs.innerText = countClubs;
+
+  // Filter by active suit tab if user clicked a specific suit
+  let displayCards = hand;
+  const isFilterActive = activeSuitFilter !== 'ALL';
+  if (isFilterActive) {
+    displayCards = hand.filter(c => c.suit === activeSuitFilter);
+    // If player has 0 cards of this suit, fall back to ALL
+    if (displayCards.length === 0) {
+      displayCards = hand;
+      activeSuitFilter = 'ALL';
+      document.querySelectorAll('.suit-tab').forEach(tab => {
+        if (tab.dataset.suit === 'ALL') {
+          tab.className = 'suit-tab active px-2.5 py-0.5 rounded-lg bg-amber-500 text-black font-extrabold text-[11px] shadow transition';
+        } else {
+          const isRed = tab.dataset.suit === '♥' || tab.dataset.suit === '♦';
+          tab.className = `suit-tab px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 ${isRed ? 'text-red-400' : 'text-slate-100'} font-bold text-[11px] border border-slate-700 transition`;
+        }
+      });
+    }
+  }
+
+  // Overlap margin based on card count
+  let overlapMargin = '-26px';
+  if (isFilterActive || displayCards.length <= 6) {
+    overlapMargin = '6px'; // Zero overlap when filtering or few cards!
+  } else if (displayCards.length <= 10) {
+    overlapMargin = '-14px';
+  } else if (displayCards.length <= 15) {
+    overlapMargin = '-20px';
+  }
+
   // 1. BLUFF MODE: multi-card selection
   if (currentGameState && currentGameState.gameType === 'bluff') {
-    hand.forEach((card) => {
+    displayCards.forEach((card, idx) => {
       const isSelected = selectedBluffCardIds.has(card.id);
       const cardEl = createCardElement(card);
       cardEl.classList.add('hand-card', 'valid-card');
+      if (idx > 0) cardEl.style.marginLeft = overlapMargin;
+
       if (isSelected) {
         cardEl.classList.add('selected-bluff-card');
       }
@@ -795,10 +847,11 @@ function renderUserHand(hand, validCards, isMyTurn) {
   // 2. THULLA & RANG MODES: single card play
   const validCardIds = new Set((validCards || []).map(c => c.id));
 
-  hand.forEach((card, idx) => {
+  displayCards.forEach((card, idx) => {
     const isValid = isMyTurn && (validCardIds.size === 0 || validCardIds.has(card.id));
     const cardEl = createCardElement(card);
     cardEl.classList.add('hand-card');
+    if (idx > 0) cardEl.style.marginLeft = overlapMargin;
 
     if (isValid) {
       cardEl.classList.add('valid-card');
@@ -813,6 +866,28 @@ function renderUserHand(hand, validCards, isMyTurn) {
     userCardsContainer.appendChild(cardEl);
   });
 }
+
+// Suit Filter Tab Click Handler
+document.addEventListener('click', (e) => {
+  if (e.target && e.target.classList.contains('suit-tab')) {
+    activeSuitFilter = e.target.dataset.suit || 'ALL';
+    document.querySelectorAll('.suit-tab').forEach(tab => {
+      if (tab.dataset.suit === activeSuitFilter) {
+        tab.className = 'suit-tab active px-2.5 py-0.5 rounded-lg bg-amber-500 text-black font-extrabold text-[11px] shadow transition';
+      } else {
+        const isRed = tab.dataset.suit === '♥' || tab.dataset.suit === '♦';
+        tab.className = `suit-tab px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 ${isRed ? 'text-red-400' : 'text-slate-100'} font-bold text-[11px] border border-slate-700 transition`;
+      }
+    });
+
+    if (currentGameState) {
+      const myPlayer = currentGameState.players.find(p => p.id === myPlayerId);
+      if (myPlayer) {
+        renderUserHand(myPlayer.hand || [], myPlayer.validCards || [], currentGameState.currentTurnPlayerId === myPlayerId);
+      }
+    }
+  }
+});
 
 // Create Card DOM Element
 function createCardElement(card) {

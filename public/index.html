@@ -368,10 +368,19 @@
 
     <!-- Bottom User Hand Tray -->
     <div class="user-hand-tray">
-      <div class="flex items-center justify-between w-full max-w-xl px-2 mb-1">
-        <span class="text-xs font-bold text-amber-400">Your Hand (<span id="user-hand-count">0</span> cards)</span>
-        <span id="hand-turn-hint" class="text-[11px] text-slate-400 font-medium">Select a highlighted card to play</span>
+      <div class="flex items-center justify-between w-full max-w-xl px-2 mb-1 flex-wrap gap-1">
+        <span class="text-xs font-bold text-amber-400">Your Hand (<span id="user-hand-count">0</span>)</span>
+        
+        <!-- Suit Quick Filter Tabs for 2-3 players / big hands -->
+        <div id="suit-filter-tabs" class="flex gap-1 overflow-x-auto text-xs py-0.5">
+          <button type="button" class="suit-tab active px-2.5 py-0.5 rounded-lg bg-amber-500 text-black font-extrabold text-[11px] shadow transition" data-suit="ALL">All (<span id="tab-count-all">0</span>)</button>
+          <button type="button" class="suit-tab px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-100 font-bold text-[11px] border border-slate-700 transition" data-suit="♠">♠ <span id="tab-count-spades">0</span></button>
+          <button type="button" class="suit-tab px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-red-400 font-bold text-[11px] border border-slate-700 transition" data-suit="♥">♥ <span id="tab-count-hearts">0</span></button>
+          <button type="button" class="suit-tab px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-red-400 font-bold text-[11px] border border-slate-700 transition" data-suit="♦">♦ <span id="tab-count-diamonds">0</span></button>
+          <button type="button" class="suit-tab px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-100 font-bold text-[11px] border border-slate-700 transition" data-suit="♣">♣ <span id="tab-count-clubs">0</span></button>
+        </div>
       </div>
+      <div id="hand-turn-hint" class="text-[10px] text-slate-400 font-medium w-full max-w-xl px-2 mb-1 text-center">Select a highlighted card to play</div>
 
       <div class="cards-container" id="user-cards-container">
         <!-- Hand cards rendered here -->
