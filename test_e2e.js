@@ -79,12 +79,41 @@ async function runE2ETest() {
   });
   console.log(`Game started: ${startRes.success}`);
 
+  // 7. Test Worldwide Matchmaking with 4 sockets
+  console.log('--- Testing Worldwide Matchmaking (4-player queue) ---');
+  const mmSockets = [];
+  for (let i = 0; i < 4; i++) {
+    const s = io('http://localhost:3042');
+    await new Promise((resolve) => s.on('connect', resolve));
+    mmSockets.push(s);
+  }
+
+  const matchFoundPromises = mmSockets.map(s => {
+    return new Promise(resolve => s.once('match_found', resolve));
+  });
+
+  for (let i = 0; i < 4; i++) {
+    mmSockets[i].emit('join_matchmaking', {
+      gameType: 'thulla',
+      playerName: `MM_Player_${i + 1}`,
+      avatar: '🦊'
+    });
+    await new Promise(r => setTimeout(r, 80));
+  }
+
+  const matchFoundResults = await Promise.all(matchFoundPromises);
+  console.log(`Match found for all 4 players! Room ID: ${matchFoundResults[0].roomId}`);
+  if (!matchFoundResults[0].roomId || matchFoundResults.length !== 4) {
+    throw new Error('Worldwide matchmaking failed to match 4 players');
+  }
+
   // Wait 1.5 seconds for game state and bot turns
   await new Promise(r => setTimeout(r, 1500));
 
   console.log('✅ End-to-end verification passed with flying colors!');
   socket1.disconnect();
   socket2.disconnect();
+  mmSockets.forEach(s => s.disconnect());
   process.exit(0);
 }
 

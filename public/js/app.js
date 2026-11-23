@@ -110,17 +110,24 @@ function showToast(message, type = 'info') {
 
 // Render Avatar Pickers
 function setupAvatarPickers() {
-  [avatarPickerCreate, avatarPickerJoin].forEach(picker => {
+  const pickers = [
+    document.getElementById('avatar-picker-global'),
+    avatarPickerCreate,
+    avatarPickerJoin
+  ].filter(Boolean);
+
+  pickers.forEach(picker => {
     picker.innerHTML = '';
-    AVATARS.forEach((av, idx) => {
+    AVATARS.forEach((av) => {
       const btn = document.createElement('button');
       btn.type = 'button';
-      btn.className = `w-10 h-10 rounded-xl flex items-center justify-center text-lg border transition flex-shrink-0 ${
+      btn.className = `w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center text-base sm:text-lg border transition flex-shrink-0 ${
         av === selectedAvatar ? 'bg-amber-500/20 border-amber-500 scale-105' : 'bg-slate-800 border-slate-700 hover:border-slate-600'
       }`;
       btn.innerText = av;
       btn.addEventListener('click', () => {
         selectedAvatar = av;
+        localStorage.setItem('thulla_player_avatar', selectedAvatar);
         setupAvatarPickers();
       });
       picker.appendChild(btn);
@@ -235,56 +242,249 @@ function switchScreen(screen) {
   }
 }
 
-// --- EVENT HANDLERS ---
+// --- PROFILE & MODE HELPERS ---
 
-// Create Room
-if (createRoomBtn) {
-  createRoomBtn.addEventListener('click', () => {
-    const name = createPlayerName ? createPlayerName.value.trim() || 'Player 1' : 'Player 1';
-    const maxPlayers = createMaxPlayers ? parseInt(createMaxPlayers.value) || 4 : 4;
-    const deckMode = createDeckMode ? createDeckMode.value : 'auto';
-    const gameTypeSelect = document.getElementById('create-game-type');
-    const gameType = gameTypeSelect ? gameTypeSelect.value : 'thulla';
+function getPlayerProfile() {
+  const globalInput = document.getElementById('global-player-name');
+  let name = globalInput ? globalInput.value.trim() : '';
+  if (!name) name = localStorage.getItem('thulla_player_name') || 'Player';
+  localStorage.setItem('thulla_player_name', name);
+  localStorage.setItem('thulla_player_avatar', selectedAvatar);
+  return { name, avatar: selectedAvatar };
+}
 
-    localStorage.setItem('thulla_player_name', name);
-    localStorage.setItem('thulla_player_avatar', selectedAvatar);
+function switchMainTab(mode) {
+  const tabs = [
+    { id: 'tab-btn-friends', sec: 'section-friends', activeGrad: 'from-amber-500 to-amber-600' },
+    { id: 'tab-btn-bots', sec: 'section-bots', activeGrad: 'from-emerald-500 to-teal-600' },
+    { id: 'tab-btn-worldwide', sec: 'section-worldwide', activeGrad: 'from-blue-500 to-indigo-600' }
+  ];
 
-    socket.emit('create_room', {
-      hostName: name,
-      avatar: selectedAvatar,
-      options: { maxPlayers, deckCount: deckMode, gameType }
-    }, (res) => {
-      if (res.success) {
-        myPlayerId = res.playerId;
-        currentRoomId = res.roomId;
-        isHost = true;
-        setupLobbyView(res.gameState);
-        switchScreen('lobby');
-        showToast(`🎉 Room created! Code: ${res.roomId}`);
-      } else {
-        showToast(res.error, 'error');
-      }
-    });
+  tabs.forEach(t => {
+    const btn = document.getElementById(t.id);
+    const sec = document.getElementById(t.sec);
+    if (!btn || !sec) return;
+
+    if (t.id === `tab-btn-${mode}`) {
+      btn.className = `mode-tab-btn active py-2.5 px-2 rounded-xl text-xs sm:text-sm font-black transition flex items-center justify-center gap-1.5 sm:gap-2 bg-gradient-to-r ${t.activeGrad} text-slate-950 shadow-md`;
+      sec.classList.remove('hidden');
+    } else {
+      btn.className = 'mode-tab-btn py-2.5 px-2 rounded-xl text-xs sm:text-sm font-black text-slate-400 hover:text-white transition flex items-center justify-center gap-1.5 sm:gap-2';
+      sec.classList.add('hidden');
+    }
+  });
+
+  if (mode === 'worldwide') {
+    fetchWorldwideCounts();
+  }
+}
+
+// Create Room & Enter Lobby (Play with Friends)
+function createGameAndEnterLobby(name, avatar, options) {
+  localStorage.setItem('thulla_player_name', name);
+  localStorage.setItem('thulla_player_avatar', avatar);
+
+  socket.emit('create_room', {
+    hostName: name,
+    avatar: avatar,
+    options
+  }, (res) => {
+    if (res && res.success) {
+      myPlayerId = res.playerId;
+      currentRoomId = res.roomId;
+      isHost = true;
+      setupLobbyView(res.gameState);
+      switchScreen('lobby');
+      showToast(`🎉 Room created! Code: ${res.roomId}`);
+    } else {
+      showToast(res ? res.error : 'Failed to create table', 'error');
+    }
   });
 }
 
-// Join Room
+// Instant Play vs AI Bots
+function startSoloBotGame(name, avatar, gameType, botCount) {
+  const totalPlayers = botCount + 1;
+  localStorage.setItem('thulla_player_name', name);
+  localStorage.setItem('thulla_player_avatar', avatar);
+
+  showToast(`Starting ${gameType.toUpperCase()} vs ${botCount} bots...`);
+
+  socket.emit('create_room', {
+    hostName: name,
+    avatar: avatar,
+    options: { maxPlayers: totalPlayers, gameType, deckCount: 'auto', botSpeed: 1600 }
+  }, (res) => {
+    if (res && res.success) {
+      myPlayerId = res.playerId;
+      currentRoomId = res.roomId;
+      isHost = true;
+
+      socket.emit('fill_bots', { roomId: res.roomId, count: totalPlayers }, () => {
+        socket.emit('start_game', { roomId: res.roomId });
+      });
+    } else {
+      showToast(res ? res.error : 'Failed to start bot match', 'error');
+    }
+  });
+}
+
+// Worldwide Matchmaking Logic
+let activeMatchmakingGame = null;
+
+function startMatchmaking(gameType) {
+  const { name, avatar } = getPlayerProfile();
+  activeMatchmakingGame = gameType;
+
+  const gameNames = {
+    thulla: '🎴 Thulla (4-Player Table)',
+    bluff: '🤫 Bluff (4-Player Table)',
+    rang: '👑 Rang (4-Player Partnership)'
+  };
+
+  const modal = document.getElementById('modal-matchmaking');
+  const label = document.getElementById('matchmaking-game-label');
+  const statusText = document.getElementById('matchmaking-status-text');
+  const slotsCount = document.getElementById('matchmaking-slots-count');
+  if (label) label.innerText = gameNames[gameType] || gameType.toUpperCase();
+  if (statusText) statusText.innerText = 'Searching for players worldwide...';
+  if (slotsCount) slotsCount.innerText = '1 / 4 Players';
+
+  renderMatchmakingSlots([{ id: myPlayerId || 'me', name, avatar }]);
+  if (modal) modal.classList.remove('hidden');
+
+  socket.emit('join_matchmaking', { gameType, playerName: name, avatar }, (res) => {
+    if (res && res.success) {
+      showToast(`Joined worldwide ${gameType.toUpperCase()} queue!`);
+    } else {
+      showToast(res ? res.error : 'Could not join matchmaking', 'error');
+    }
+  });
+}
+
+function cancelMatchmaking() {
+  socket.emit('leave_matchmaking', () => {
+    activeMatchmakingGame = null;
+    const modal = document.getElementById('modal-matchmaking');
+    if (modal) modal.classList.add('hidden');
+    showToast('Matchmaking cancelled');
+    fetchWorldwideCounts();
+  });
+}
+
+function renderMatchmakingSlots(players) {
+  const grid = document.getElementById('matchmaking-slots-grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+
+  for (let i = 0; i < 4; i++) {
+    const p = players[i];
+    const slot = document.createElement('div');
+    slot.className = `p-3 rounded-xl border flex items-center gap-2.5 transition ${
+      p ? 'bg-amber-500/10 border-amber-500/50 shadow-md' : 'bg-slate-900/40 border-dashed border-slate-800'
+    }`;
+    if (p) {
+      slot.innerHTML = `
+        <div class="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center text-lg flex-shrink-0">
+          ${p.avatar || '👤'}
+        </div>
+        <div class="text-left truncate">
+          <div class="font-bold text-xs text-white truncate">${p.name}</div>
+          <div class="text-[10px] text-emerald-400 font-bold flex items-center gap-1">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Ready
+          </div>
+        </div>
+      `;
+    } else {
+      slot.innerHTML = `
+        <div class="w-9 h-9 rounded-full border border-dashed border-slate-700 flex items-center justify-center text-slate-500 text-xs flex-shrink-0 animate-pulse">
+          ⏳
+        </div>
+        <div class="text-left truncate">
+          <div class="text-xs text-slate-500 font-medium">Slot ${i + 1}</div>
+          <div class="text-[10px] text-slate-500 italic">Searching...</div>
+        </div>
+      `;
+    }
+    grid.appendChild(slot);
+  }
+}
+
+function updateQueueBadge(gameType, count) {
+  const badge = document.getElementById(`badge-queue-${gameType}`);
+  if (badge) {
+    badge.innerText = count > 0 ? `${count} in queue` : '0 in queue';
+    if (count > 0) {
+      badge.className = 'text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 animate-pulse';
+    } else {
+      badge.className = 'text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700';
+    }
+  }
+}
+
+function fetchWorldwideCounts() {
+  socket.emit('get_worldwide_counts', (counts) => {
+    if (counts) {
+      updateQueueBadge('thulla', counts.thulla || 0);
+      updateQueueBadge('bluff', counts.bluff || 0);
+      updateQueueBadge('rang', counts.rang || 0);
+    }
+  });
+}
+
+// --- EVENT HANDLERS ---
+
+// Tab Switchers
+const tabBtnFriends = document.getElementById('tab-btn-friends');
+const tabBtnBots = document.getElementById('tab-btn-bots');
+const tabBtnWorldwide = document.getElementById('tab-btn-worldwide');
+
+if (tabBtnFriends) tabBtnFriends.addEventListener('click', () => switchMainTab('friends'));
+if (tabBtnBots) tabBtnBots.addEventListener('click', () => switchMainTab('bots'));
+if (tabBtnWorldwide) tabBtnWorldwide.addEventListener('click', () => switchMainTab('worldwide'));
+
+// 1. Play with Friends Cards
+const btnCreateThulla = document.getElementById('btn-create-thulla');
+const btnCreateBluff = document.getElementById('btn-create-bluff');
+const btnCreateRang = document.getElementById('btn-create-rang');
+
+if (btnCreateThulla) {
+  btnCreateThulla.addEventListener('click', () => {
+    const profile = getPlayerProfile();
+    const maxPlayers = parseInt(document.getElementById('friends-thulla-players')?.value) || 4;
+    createGameAndEnterLobby(profile.name, profile.avatar, { maxPlayers, gameType: 'thulla', deckCount: 'auto' });
+  });
+}
+
+if (btnCreateBluff) {
+  btnCreateBluff.addEventListener('click', () => {
+    const profile = getPlayerProfile();
+    const maxPlayers = parseInt(document.getElementById('friends-bluff-players')?.value) || 4;
+    createGameAndEnterLobby(profile.name, profile.avatar, { maxPlayers, gameType: 'bluff', deckCount: '1' });
+  });
+}
+
+if (btnCreateRang) {
+  btnCreateRang.addEventListener('click', () => {
+    const profile = getPlayerProfile();
+    createGameAndEnterLobby(profile.name, profile.avatar, { maxPlayers: 4, gameType: 'rang', deckCount: '1' });
+  });
+}
+
+// Join Room (Friends mode)
 if (joinRoomBtn) {
   joinRoomBtn.addEventListener('click', () => {
     const code = joinRoomCode ? joinRoomCode.value.trim().toUpperCase() : '';
-    const name = joinPlayerName ? joinPlayerName.value.trim() || 'Player' : 'Player';
+    const profile = getPlayerProfile();
 
     if (!code) {
       return showToast('Please enter a 6-character room code', 'error');
     }
 
-    localStorage.setItem('thulla_player_name', name);
-    localStorage.setItem('thulla_player_avatar', selectedAvatar);
-
     socket.emit('join_room', {
       roomId: code,
-      playerName: name,
-      avatar: selectedAvatar
+      playerName: profile.name,
+      avatar: profile.avatar
     }, (res) => {
       if (res.success) {
         myPlayerId = res.playerId;
@@ -300,41 +500,44 @@ if (joinRoomBtn) {
   });
 }
 
-// Quick Play vs 2 to 6 AI Bots
-if (quickPlayBtn) {
-  quickPlayBtn.addEventListener('click', () => {
-    const name = createPlayerName ? createPlayerName.value.trim() || 'You' : 'You';
-    const botSelect = document.getElementById('quick-bot-count');
-    const botCount = botSelect ? (parseInt(botSelect.value) || 3) : 3;
-    const totalPlayers = botCount + 1;
+// 2. Play with Bots Cards
+const btnBotsThulla = document.getElementById('btn-bots-thulla');
+const btnBotsBluff = document.getElementById('btn-bots-bluff');
+const btnBotsRang = document.getElementById('btn-bots-rang');
 
-    socket.emit('create_room', {
-      hostName: name,
-      avatar: selectedAvatar,
-      options: { maxPlayers: totalPlayers, deckCount: 'auto', botSpeed: 1600 }
-    }, (res) => {
-      if (res.success) {
-        myPlayerId = res.playerId;
-        currentRoomId = res.roomId;
-        isHost = true;
-
-        // Fill with selected number of bots and auto-start
-        socket.emit('fill_bots', { roomId: res.roomId, count: totalPlayers }, () => {
-          socket.emit('start_game', { roomId: res.roomId });
-        });
-      } else {
-        showToast(res.error, 'error');
-      }
-    });
+if (btnBotsThulla) {
+  btnBotsThulla.addEventListener('click', () => {
+    const profile = getPlayerProfile();
+    const botCount = parseInt(document.getElementById('bots-count-select')?.value) || 3;
+    startSoloBotGame(profile.name, profile.avatar, 'thulla', botCount);
   });
 }
 
-// Slider Capacity Label
-if (createMaxPlayers) {
-  createMaxPlayers.addEventListener('input', (e) => {
-    if (playerCapacityLabel) playerCapacityLabel.innerText = `${e.target.value} Players`;
+if (btnBotsBluff) {
+  btnBotsBluff.addEventListener('click', () => {
+    const profile = getPlayerProfile();
+    const botCount = parseInt(document.getElementById('bots-count-select')?.value) || 3;
+    startSoloBotGame(profile.name, profile.avatar, 'bluff', botCount);
   });
 }
+
+if (btnBotsRang) {
+  btnBotsRang.addEventListener('click', () => {
+    const profile = getPlayerProfile();
+    startSoloBotGame(profile.name, profile.avatar, 'rang', 3);
+  });
+}
+
+// 3. Play Worldwide Cards
+const btnQueueThulla = document.getElementById('btn-queue-thulla');
+const btnQueueBluff = document.getElementById('btn-queue-bluff');
+const btnQueueRang = document.getElementById('btn-queue-rang');
+const btnCancelMatchmaking = document.getElementById('btn-cancel-matchmaking');
+
+if (btnQueueThulla) btnQueueThulla.addEventListener('click', () => startMatchmaking('thulla'));
+if (btnQueueBluff) btnQueueBluff.addEventListener('click', () => startMatchmaking('bluff'));
+if (btnQueueRang) btnQueueRang.addEventListener('click', () => startMatchmaking('rang'));
+if (btnCancelMatchmaking) btnCancelMatchmaking.addEventListener('click', () => cancelMatchmaking());
 
 // Lobby Preset Bot Buttons (2 to 6 bots)
 document.addEventListener('click', (e) => {
@@ -1187,15 +1390,62 @@ socket.on('bot_thinking', (data) => {
   }
 });
 
+// Worldwide Matchmaking Socket Listeners
+socket.on('matchmaking_update', ({ gameType, count, needed, players }) => {
+  if (activeMatchmakingGame === gameType) {
+    const slotsCount = document.getElementById('matchmaking-slots-count');
+    if (slotsCount) slotsCount.innerText = `${count} / ${needed} Players`;
+    renderMatchmakingSlots(players);
+  }
+  updateQueueBadge(gameType, count);
+});
+
+socket.on('match_found', ({ roomId, gameType, playerId, isHost: hostStatus }) => {
+  activeMatchmakingGame = null;
+  myPlayerId = playerId;
+  currentRoomId = roomId;
+  isHost = hostStatus;
+
+  const modal = document.getElementById('modal-matchmaking');
+  const statusText = document.getElementById('matchmaking-status-text');
+  if (statusText) statusText.innerText = '🎉 Match Found! Launching Table...';
+
+  if (window.soundFx) window.soundFx.play('game_start');
+
+  setTimeout(() => {
+    if (modal) modal.classList.add('hidden');
+    switchScreen('game');
+    showToast('Table connected! Match started worldwide!', 'info');
+  }, 900);
+});
+
 // Initialize on Load
 window.addEventListener('DOMContentLoaded', () => {
   setupAvatarPickers();
-  // Restore saved player name if any
+  // Restore saved player profile if any
   const savedName = localStorage.getItem('thulla_player_name');
   if (savedName) {
+    const globalInput = document.getElementById('global-player-name');
+    if (globalInput) globalInput.value = savedName;
     if (createPlayerName) createPlayerName.value = savedName;
     if (joinPlayerName) joinPlayerName.value = savedName;
   }
+  const savedAvatar = localStorage.getItem('thulla_player_avatar');
+  if (savedAvatar) {
+    selectedAvatar = savedAvatar;
+    setupAvatarPickers();
+  }
+
+  const globalInput = document.getElementById('global-player-name');
+  if (globalInput) {
+    globalInput.addEventListener('input', (e) => {
+      localStorage.setItem('thulla_player_name', e.target.value.trim());
+    });
+  }
+
+  // Fetch worldwide queue counts
+  fetchWorldwideCounts();
+
   // If user opened a shareable room link, join table DIRECTLY!
   parseURLParamsAndDirectJoin();
 });

@@ -47,6 +47,36 @@ app.get('/room/:roomId', (req, res) => {
 // Rooms storage: roomId -> { id, hostId, hostSocketId, game, sockets: Map(playerId -> socketId), botTimer }
 const rooms = new Map();
 
+// Worldwide Matchmaking Queues: gameType -> Array of { socketId, playerId, playerName, avatar, joinedAt }
+const matchmakingQueues = {
+  thulla: [],
+  bluff: [],
+  rang: []
+};
+
+function broadcastQueueUpdate(gameType) {
+  const queue = matchmakingQueues[gameType] || [];
+  const payload = {
+    gameType,
+    count: queue.length,
+    needed: 4,
+    players: queue.map(p => ({ id: p.playerId, name: p.playerName, avatar: p.avatar }))
+  };
+  for (const entry of queue) {
+    io.to(entry.socketId).emit('matchmaking_update', payload);
+  }
+}
+
+function removeSocketFromQueues(socketId) {
+  for (const gameType of ['thulla', 'bluff', 'rang']) {
+    const prevLen = matchmakingQueues[gameType].length;
+    matchmakingQueues[gameType] = matchmakingQueues[gameType].filter(e => e.socketId !== socketId);
+    if (matchmakingQueues[gameType].length !== prevLen) {
+      broadcastQueueUpdate(gameType);
+    }
+  }
+}
+
 // Helper to generate unique 6-character room code
 function generateRoomCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // No ambiguous 0/O or 1/I
@@ -588,8 +618,129 @@ io.on('connection', (socket) => {
     }
   });
 
-  // 11. Disconnect
+  // 11. Worldwide Matchmaking: Join Queue
+  socket.on('join_matchmaking', ({ gameType = 'thulla', playerName, avatar }, callback) => {
+    try {
+      const gType = ['thulla', 'bluff', 'rang'].includes(gameType) ? gameType : 'thulla';
+      removeSocketFromQueues(socket.id);
+
+      const playerId = 'user_' + socket.id.slice(0, 8);
+      const name = (playerName || 'Player').trim().slice(0, 14);
+      const av = avatar || '🦊';
+
+      const entry = {
+        socketId: socket.id,
+        playerId,
+        playerName: name,
+        avatar: av,
+        gameType: gType,
+        joinedAt: Date.now()
+      };
+
+      matchmakingQueues[gType].push(entry);
+      socket.matchmakingGame = gType;
+
+      if (callback) {
+        callback({
+          success: true,
+          gameType: gType,
+          count: matchmakingQueues[gType].length,
+          needed: 4
+        });
+      }
+
+      broadcastQueueUpdate(gType);
+      console.log(`[Matchmaking] ${name} joined ${gType} queue (${matchmakingQueues[gType].length}/4)`);
+
+      // Check if 4 slots full
+      if (matchmakingQueues[gType].length >= 4) {
+        const matched = matchmakingQueues[gType].splice(0, 4);
+        console.log(`[Matchmaking] 4 players matched for ${gType}! Starting table...`);
+
+        const roomId = generateRoomCode();
+        const game = createGameInstance(roomId, {
+          maxPlayers: 4,
+          gameType: gType,
+          deckCount: '1',
+          botSpeed: 1600
+        });
+
+        const room = {
+          id: roomId,
+          hostId: matched[0].playerId,
+          hostSocketId: matched[0].socketId,
+          game,
+          sockets: new Map(),
+          botTimer: null,
+          isWorldwide: true
+        };
+
+        // Add all 4 players to game & room
+        matched.forEach(p => {
+          game.addPlayer(p.playerId, p.playerName, false, p.avatar);
+          room.sockets.set(p.playerId, p.socketId);
+          const s = io.sockets.sockets.get(p.socketId);
+          if (s) {
+            s.join(roomId);
+            delete s.matchmakingGame;
+          }
+        });
+
+        rooms.set(roomId, room);
+
+        // Notify matched players that match is found
+        matched.forEach(p => {
+          io.to(p.socketId).emit('match_found', {
+            roomId,
+            gameType: gType,
+            playerId: p.playerId,
+            isHost: p.playerId === room.hostId,
+            players: matched.map(m => ({ id: m.playerId, name: m.playerName, avatar: m.avatar }))
+          });
+        });
+
+        broadcastQueueUpdate(gType);
+
+        // Auto-start game after brief delay (1.2s)
+        setTimeout(() => {
+          try {
+            if (game.status === 'waiting') {
+              game.startGame();
+              broadcastGameState(room, { sound: 'game_start' });
+              triggerBotTurnIfNeeded(room);
+            }
+          } catch (err) {
+            console.error(`Error auto-starting worldwide game ${roomId}:`, err);
+          }
+        }, 1200);
+      }
+    } catch (err) {
+      console.error('Error in join_matchmaking:', err);
+      if (callback) callback({ success: false, error: err.message });
+    }
+  });
+
+  // 12. Worldwide Matchmaking: Leave Queue
+  socket.on('leave_matchmaking', (callback) => {
+    removeSocketFromQueues(socket.id);
+    delete socket.matchmakingGame;
+    if (callback) callback({ success: true });
+  });
+
+  // 13. Worldwide Matchmaking: Get Counts
+  socket.on('get_worldwide_counts', (callback) => {
+    if (callback) {
+      callback({
+        thulla: (matchmakingQueues.thulla || []).length,
+        bluff: (matchmakingQueues.bluff || []).length,
+        rang: (matchmakingQueues.rang || []).length
+      });
+    }
+  });
+
+  // 14. Disconnect
   socket.on('disconnect', () => {
+    removeSocketFromQueues(socket.id);
     if (!currentRoomId || !currentPlayerId) return;
     const room = rooms.get(currentRoomId);
     if (!room) return;
