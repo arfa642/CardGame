@@ -1,14 +1,19 @@
 /* 
- * Thulla Card Game - Modern Casino / Green Felt Stylesheet
+ * ThullaKing - Premium Mobile Casino & Card Game Stylesheet
+ * Vibrant 3D Arcade & Casual Gaming Aesthetic (Inspired by Ludo King & Teen Patti King)
  */
 
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&display=swap');
+
 :root {
-  --bg-dark: #0b1319;
+  --bg-deep-purple: #130626;
+  --bg-royal-purple: #230b42;
+  --purple-glow: #7c2d12;
   --felt-green: #0d4a36;
   --felt-dark: #082f23;
-  --table-border: #8d6228;
-  --table-border-inner: #4a3314;
-  --gold-accent: #f59e0b;
+  --table-border: #d97706;
+  --table-border-inner: #92400e;
+  --gold-accent: #fbbf24;
   --card-width: 72px;
   --card-height: 104px;
   --card-radius: 8px;
@@ -31,21 +36,310 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  background-color: var(--bg-dark);
-  color: #f3f4f6;
+  font-family: 'Fredoka', 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: radial-gradient(circle at 50% 15%, #3b116e 0%, #1e0938 45%, #0e031c 100%);
+  background-attachment: fixed;
+  color: #f8fafc;
   min-height: 100vh;
   overflow-x: hidden;
+  position: relative;
 }
 
-/* Glassmorphism card panels */
+/* Ambient Sparkle / Glow Background Overlay */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: 
+    radial-gradient(2px 2px at 20px 30px, #ffd700, rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 40px 70px, #ffffff, rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 90px 40px, #fbbf24, rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 160px 120px, #f472b6, rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 230px 190px, #38bdf8, rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 310px 80px, #fbbf24, rgba(0,0,0,0)),
+    radial-gradient(1.5px 1.5px at 390px 160px, #ffffff, rgba(0,0,0,0));
+  background-repeat: repeat;
+  background-size: 350px 350px;
+  opacity: 0.22;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Glassmorphism & Gaming Panels */
 .glass-panel {
-  background: rgba(18, 28, 38, 0.85);
+  background: linear-gradient(180deg, rgba(38, 16, 71, 0.88) 0%, rgba(20, 7, 38, 0.94) 100%);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+  border: 2px solid rgba(251, 191, 36, 0.25);
+  box-shadow: 
+    0 12px 35px rgba(0, 0, 0, 0.7),
+    inset 0 1px 1px rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+}
+
+/* 3D Push-Down Arcade Buttons */
+.thulla-btn-gold {
+  background: linear-gradient(180deg, #fef08a 0%, #f59e0b 50%, #d97706 100%);
+  color: #3d1a00;
+  font-family: 'Fredoka', sans-serif;
+  font-weight: 800;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+  border: 1px solid #fde047;
+  border-bottom: 5px solid #92400e;
+  border-radius: 14px;
+  box-shadow: 0 6px 16px rgba(217, 119, 6, 0.4), 0 3px 0 #78350f;
+  transition: all 0.1s ease;
+  cursor: pointer;
+}
+
+.thulla-btn-gold:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+
+.thulla-btn-gold:active {
+  transform: translateY(4px);
+  border-bottom-width: 1px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+}
+
+.thulla-btn-green {
+  background: linear-gradient(180deg, #a7f3d0 0%, #10b981 50%, #059669 100%);
+  color: #022c22;
+  font-family: 'Fredoka', sans-serif;
+  font-weight: 800;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
+  border: 1px solid #6ee7b7;
+  border-bottom: 5px solid #065f46;
+  border-radius: 14px;
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4), 0 3px 0 #044e3a;
+  transition: all 0.1s ease;
+  cursor: pointer;
+}
+
+.thulla-btn-green:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+
+.thulla-btn-green:active {
+  transform: translateY(4px);
+  border-bottom-width: 1px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+}
+
+.thulla-btn-purple {
+  background: linear-gradient(180deg, #e9d5ff 0%, #a855f7 50%, #7e22ce 100%);
+  color: #2e0854;
+  font-family: 'Fredoka', sans-serif;
+  font-weight: 800;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
+  border: 1px solid #d8b4fe;
+  border-bottom: 5px solid #581c87;
+  border-radius: 14px;
+  box-shadow: 0 6px 16px rgba(168, 85, 247, 0.4), 0 3px 0 #3b0764;
+  transition: all 0.1s ease;
+  cursor: pointer;
+}
+
+.thulla-btn-purple:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+
+.thulla-btn-purple:active {
+  transform: translateY(4px);
+  border-bottom-width: 1px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+}
+
+.thulla-btn-red {
+  background: linear-gradient(180deg, #fecaca 0%, #ef4444 50%, #b91c1c 100%);
+  color: #fff;
+  font-family: 'Fredoka', sans-serif;
+  font-weight: 800;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  border: 1px solid #fca5a5;
+  border-bottom: 5px solid #7f1d1d;
+  border-radius: 14px;
+  box-shadow: 0 6px 16px rgba(239, 68, 68, 0.4), 0 3px 0 #5b1313;
+  transition: all 0.1s ease;
+  cursor: pointer;
+}
+
+.thulla-btn-red:active {
+  transform: translateY(4px);
+  border-bottom-width: 1px;
+}
+
+/* Header Currency & Profile Badges */
+.currency-pill {
+  background: linear-gradient(180deg, #2b1150 0%, #15062a 100%);
+  border: 2px solid #eab308;
+  border-radius: 9999px;
+  padding: 3px 8px 3px 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 
+    0 4px 10px rgba(0,0,0,0.6),
+    inset 0 1px 1px rgba(255,255,255,0.25);
+  font-weight: 800;
+  font-size: 13px;
+  color: #fff;
+}
+
+.currency-pill .pill-add-btn {
+  background: linear-gradient(180deg, #34d399 0%, #059669 100%);
+  border: 1px solid #6ee7b7;
+  color: #fff;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 900;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+}
+
+.profile-avatar-frame {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 3px solid #fbbf24;
+  background: linear-gradient(135deg, #4c1d95, #1e1b4b);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.4);
+}
+
+.profile-level-badge {
+  position: absolute;
+  bottom: -6px;
+  background: linear-gradient(180deg, #fbbf24 0%, #b45309 100%);
+  border: 1.5px solid #fff;
+  border-radius: 9999px;
+  font-size: 9px;
+  font-weight: 900;
+  color: #000;
+  padding: 0 5px;
+  letter-spacing: -0.5px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+}
+
+/* 3D Game Cards (Ludo King style big cards) */
+.game-card-3d {
+  background: linear-gradient(180deg, #2e1155 0%, #1a0833 100%);
+  border: 2.5px solid #d97706;
+  border-radius: 22px;
+  box-shadow: 
+    0 14px 28px rgba(0,0,0,0.7),
+    0 0 0 1px rgba(251, 191, 36, 0.4),
+    inset 0 2px 4px rgba(255, 255, 255, 0.2);
+  transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  position: relative;
+  overflow: hidden;
+}
+
+.game-card-3d:hover {
+  transform: translateY(-5px);
+  border-color: #fbbf24;
+  box-shadow: 
+    0 20px 35px rgba(0,0,0,0.8),
+    0 0 25px rgba(251, 191, 36, 0.35);
+}
+
+.game-card-header-badge {
+  background: linear-gradient(180deg, #fbbf24 0%, #d97706 100%);
+  border-bottom: 2px solid #78350f;
+  color: #1c0a00;
+  font-weight: 900;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 3px 10px;
+  border-radius: 0 0 12px 12px;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.4);
+}
+
+/* Floating Bottom App Navigation Dock */
+.mobile-app-dock {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(180deg, rgba(30, 11, 56, 0.96) 0%, rgba(14, 3, 28, 0.98) 100%);
+  border-top: 2.5px solid rgba(251, 191, 36, 0.35);
+  box-shadow: 0 -8px 25px rgba(0,0,0,0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  padding: 6px 12px calc(6px + env(safe-area-inset-bottom, 0px));
+  z-index: 45;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+@media (min-width: 640px) {
+  .mobile-app-dock {
+    border-radius: 24px 24px 0 0;
+  }
+}
+
+.dock-item-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  background: transparent;
+  border: none;
+  color: #cbd5e1;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 6px 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-radius: 14px;
+}
+
+.dock-item-btn.active {
+  color: #fbbf24;
+  transform: translateY(-2px);
+}
+
+.dock-item-btn .dock-icon {
+  font-size: 20px;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+}
+
+.dock-item-btn.center-king-btn {
+  background: linear-gradient(180deg, #fbbf24 0%, #d97706 100%);
+  border: 3px solid #fef08a;
   border-radius: 18px;
+  padding: 8px 16px;
+  margin-top: -24px;
+  color: #000;
+  box-shadow: 
+    0 8px 20px rgba(245, 158, 11, 0.6),
+    0 3px 0 #78350f;
+  transform: translateY(-6px);
+}
+
+.dock-item-btn.center-king-btn .dock-icon {
+  font-size: 26px;
+}
+
+.dock-item-btn.center-king-btn.active {
+  transform: translateY(-8px);
+  filter: brightness(1.1);
 }
 
 /* Casino Table */

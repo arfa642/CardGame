@@ -3,49 +3,74 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Thulla Card Game - Online Multiplayer & Bots</title>
+  <title>ThullaKing 👑 - #1 Online Multiplayer Card Game</title>
+  <!-- Google Fonts: Fredoka & Outfit (Authentic Mobile Casual Game Feel) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Canvas Confetti for Victory Celebration -->
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
   <!-- Custom Stylesheet -->
   <link rel="stylesheet" href="/css/style.css">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎴</text></svg>">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>👑</text></svg>">
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between selection:bg-amber-500 selection:text-black">
+<body class="text-slate-100 min-h-screen flex flex-col justify-between selection:bg-amber-400 selection:text-black pb-20 sm:pb-0">
 
-  <!-- ================= TOP NAVIGATION BAR ================= -->
-  <header class="w-full bg-slate-900/80 backdrop-blur border-b border-slate-800 px-4 py-3 flex items-center justify-between z-40">
-    <div class="flex items-center gap-3">
-      <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-600 to-amber-400 flex items-center justify-center text-xl shadow-lg shadow-amber-500/20">
-        🎴
+  <!-- ================= TOP MOBILE GAMING HEADER BAR ================= -->
+  <header class="w-full bg-slate-950/80 backdrop-blur-md border-b-2 border-amber-500/30 px-3 py-2 flex items-center justify-between z-40 sticky top-0 shadow-lg">
+    <!-- Player Profile Chip (Clickable to Edit) -->
+    <div id="btn-open-profile" class="flex items-center gap-2 cursor-pointer bg-slate-900/90 hover:bg-slate-800/90 border border-amber-500/40 rounded-full py-1 px-2.5 transition transform hover:scale-105 active:scale-95 shadow-md">
+      <div class="profile-avatar-frame flex-shrink-0">
+        <span id="header-avatar-emoji">🦊</span>
+        <span class="profile-level-badge">LV 12</span>
       </div>
-      <div>
-        <h1 class="font-extrabold text-lg tracking-wide bg-gradient-to-r from-amber-400 to-amber-200 bg-clip-text text-transparent">
-          THULLA
-        </h1>
-        <p class="text-[10px] text-slate-400 font-medium tracking-wider uppercase">Bhabhi • Online Multiplayer</p>
+      <div class="leading-tight pr-1">
+        <div class="flex items-center gap-1">
+          <span id="header-player-name" class="font-extrabold text-xs text-white truncate max-w-[80px] sm:max-w-[120px]">Player</span>
+          <span class="text-[10px]">🇵🇰</span>
+        </div>
+        <div class="text-[9px] font-bold text-amber-400 tracking-wider uppercase flex items-center gap-1">
+          <span>👑 VIP</span>
+          <span class="text-slate-400">• Edit</span>
+        </div>
       </div>
     </div>
 
-    <div class="flex items-center gap-2">
+    <!-- Currency & Utility Badges (Coins, Gems, Sound, Room Pill) -->
+    <div class="flex items-center gap-1.5 sm:gap-2.5">
       <!-- In-Game Room Share Pill (visible when in room) -->
-      <div id="nav-room-pill" class="hidden items-center gap-2 bg-slate-800/90 border border-slate-700/80 rounded-full px-3 py-1 text-xs">
-        <span class="text-slate-400">Room:</span>
-        <span id="nav-room-code" class="font-bold text-amber-400 tracking-wider">------</span>
-        <button id="nav-copy-link-btn" title="Copy Invite Link" class="text-slate-300 hover:text-white transition p-1">
+      <div id="nav-room-pill" class="hidden items-center gap-1.5 bg-slate-900/95 border-2 border-amber-500/50 rounded-full px-2.5 py-1 text-xs shadow-md">
+        <span class="text-slate-400 text-[10px] font-bold">Room:</span>
+        <span id="nav-room-code" class="font-black text-amber-400 font-mono tracking-wider">------</span>
+        <button id="nav-copy-link-btn" title="Copy Invite Link" class="text-slate-300 hover:text-white transition p-0.5">
           📋
         </button>
       </div>
 
+      <!-- Coins Pill -->
+      <div class="currency-pill cursor-pointer hover:border-amber-300 transition" title="Your Coins">
+        <span class="text-sm">🪙</span>
+        <span id="user-coins-display" class="font-black tracking-wide text-amber-300 text-xs">50,000</span>
+        <span class="pill-add-btn">+</span>
+      </div>
+
+      <!-- Gems Pill (Hidden on ultra-small screens) -->
+      <div class="currency-pill hidden sm:inline-flex border-sky-400/80 cursor-pointer hover:border-sky-300 transition" title="Your Gems">
+        <span class="text-sm">💎</span>
+        <span class="font-black tracking-wide text-sky-300 text-xs">120</span>
+        <span class="pill-add-btn bg-sky-500 border-sky-300">+</span>
+      </div>
+
       <!-- Sound Toggle -->
-      <button id="sound-toggle-btn" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-sm transition" title="Toggle Sound">
+      <button id="sound-toggle-btn" class="w-8 h-8 rounded-full bg-slate-800/90 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs flex items-center justify-center transition shadow" title="Toggle Sound">
         🔊
       </button>
 
       <!-- Rules Guide Button -->
-      <button id="rules-modal-btn" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-semibold text-slate-200 transition flex items-center gap-1.5">
-        <span>📖</span> Rules
+      <button id="rules-modal-btn" class="w-8 h-8 rounded-full bg-slate-800/90 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs flex items-center justify-center transition shadow" title="Rules & Guide">
+        📖
       </button>
     </div>
   </header>
@@ -54,181 +79,240 @@
   <div id="toast-container" class="fixed top-16 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 pointer-events-none w-full max-w-sm px-4"></div>
 
   <!-- ================= SCREEN 1: LANDING VIEW ================= -->
-  <main id="screen-landing" class="flex-1 flex flex-col items-center justify-start p-4 max-w-5xl mx-auto w-full">
-    <!-- Hero Header -->
-    <div class="text-center mb-5">
-      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-semibold mb-2">
-        ✨ Authentic Card Games • 4-Player Worldwide Matchmaking • AI Bots
+  <main id="screen-landing" class="flex-1 flex flex-col items-center justify-start p-3 sm:p-5 max-w-5xl mx-auto w-full">
+    
+    <!-- Hero Brand Title (ThullaKing 👑) -->
+    <div class="text-center my-3 sm:my-4">
+      <div class="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[11px] font-black uppercase tracking-widest mb-1.5 shadow-md">
+        <span>✨</span> #1 Multiplayer Card Game Online <span>✨</span>
       </div>
-      <h2 class="text-3xl sm:text-5xl font-black tracking-tight text-white mb-2">
-        Card Games <span class="bg-gradient-to-r from-amber-400 to-amber-200 bg-clip-text text-transparent">Multiplayer</span>
+      <h2 class="text-4xl sm:text-6xl font-black tracking-tight text-white flex items-center justify-center gap-2 drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)]">
+        <span class="text-3xl sm:text-5xl">👑</span>
+        <span class="bg-gradient-to-r from-amber-300 via-amber-400 to-yellow-500 bg-clip-text text-transparent">THULLA</span><span class="text-white drop-shadow-[0_2px_4px_rgba(251,191,36,0.6)]">KING</span>
       </h2>
-      <p class="text-slate-400 text-xs sm:text-sm max-w-lg mx-auto">
-        Choose your game mode below to play with friends via invite links, challenge smart AI bots, or match worldwide in 4-player tables!
+      <p class="text-slate-300 text-xs sm:text-sm font-semibold max-w-md mx-auto mt-1 opacity-90">
+        Challenge 4 players worldwide, create private tables for friends, or practice with smart AI bots!
       </p>
     </div>
 
-    <!-- Unified Player Profile Bar (Name & Avatar) -->
-    <div class="w-full max-w-3xl glass-panel p-3.5 mb-5 border border-slate-700/80 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-lg">
-      <div class="flex items-center gap-2.5 w-full sm:w-auto">
-        <span class="text-xs font-bold text-slate-300 flex-shrink-0">Your Name:</span>
-        <input type="text" id="global-player-name" placeholder="Enter nickname" maxlength="14"
-          class="bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500 transition w-full sm:w-48 font-bold">
+    <!-- Mode Switcher Tabs (3 Big Arcade Mode Buttons) -->
+    <div class="w-full max-w-3xl grid grid-cols-3 gap-2 p-1.5 bg-slate-950/80 border-2 border-amber-500/30 rounded-2xl mb-5 shadow-2xl">
+      <button id="tab-btn-worldwide" class="mode-tab-btn active py-2.5 px-2 rounded-xl text-xs sm:text-sm font-black transition flex items-center justify-center gap-1.5 thulla-btn-gold">
+        <span class="text-base">🌍</span> Worldwide
+      </button>
+      <button id="tab-btn-friends" class="mode-tab-btn py-2.5 px-2 rounded-xl text-xs sm:text-sm font-black text-slate-300 hover:text-white transition flex items-center justify-center gap-1.5">
+        <span class="text-base">👥</span> With Friends
+      </button>
+      <button id="tab-btn-bots" class="mode-tab-btn py-2.5 px-2 rounded-xl text-xs sm:text-sm font-black text-slate-300 hover:text-white transition flex items-center justify-center gap-1.5">
+        <span class="text-base">🤖</span> VS Bots
+      </button>
+    </div>
+
+    <!-- ================= MODE 1: PLAY WORLDWIDE (Default Active) ================= -->
+    <div id="section-worldwide" class="mode-section w-full max-w-4xl space-y-4">
+      <div class="flex items-center justify-between border-b-2 border-amber-500/20 pb-2">
+        <div>
+          <h3 class="text-base sm:text-lg font-black text-white flex items-center gap-2">
+            <span>🌍</span> 4-Player Worldwide Matchmaking
+          </h3>
+          <p class="text-xs text-slate-400">Match with 3 players worldwide. As soon as 4 slots fill, the match starts instantly!</p>
+        </div>
+        <div class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-bold shadow">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span> Live Global Pool
+        </div>
       </div>
-      <div class="flex items-center gap-2 w-full sm:w-auto justify-start sm:justify-end overflow-x-auto pb-0.5">
-        <span class="text-[11px] text-slate-400 font-medium flex-shrink-0">Pick Avatar:</span>
-        <div id="avatar-picker-global" class="flex gap-1.5 overflow-x-auto">
-          <!-- Avatars rendered via JS -->
+
+      <!-- Game Cards Grid: Worldwide -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <!-- Card 1: Thulla Worldwide -->
+        <div class="game-card-3d p-5 flex flex-col justify-between group border-amber-500/40">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-3xl p-2 rounded-xl bg-amber-500/20 border border-amber-500/30">🎴</span>
+              <span id="badge-queue-thulla" class="game-card-header-badge">
+                0 in queue
+              </span>
+            </div>
+            <h4 class="text-xl font-black text-white group-hover:text-amber-400 transition mt-2">Thulla Worldwide</h4>
+            <p class="text-xs text-slate-300 mt-1 mb-4 leading-relaxed font-medium">
+              Authentic 4-Player Thulla (13 cards each). Throw highest cards, avoid penalty tricks, and clear your hand!
+            </p>
+            <div class="text-[11px] text-amber-200/90 bg-amber-500/10 p-2.5 rounded-xl mb-4 border border-amber-500/20 flex items-center gap-2 font-semibold">
+              <span class="text-sm">⚡</span> 4 Players • Instant Auto-Start on 4/4
+            </div>
+          </div>
+          <button id="btn-queue-thulla" class="thulla-btn-gold w-full py-3 text-xs sm:text-sm font-black flex items-center justify-center gap-2 uppercase tracking-wide">
+            <span>🌐</span> Find Thulla Match
+          </button>
+        </div>
+
+        <!-- Card 2: Bluff Worldwide -->
+        <div class="game-card-3d p-5 flex flex-col justify-between group border-purple-500/40">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-3xl p-2 rounded-xl bg-purple-500/20 border border-purple-500/30">🤫</span>
+              <span id="badge-queue-bluff" class="game-card-header-badge bg-gradient-to-r from-purple-500 to-indigo-600 text-white border-purple-800">
+                0 in queue
+              </span>
+            </div>
+            <h4 class="text-xl font-black text-white group-hover:text-purple-400 transition mt-2">Bluff Worldwide</h4>
+            <p class="text-xs text-slate-300 mt-1 mb-4 leading-relaxed font-medium">
+              4-Player Cheat / 420 tournament with players worldwide. Place face-down cards, bluff boldly or call your opponents!
+            </p>
+            <div class="text-[11px] text-purple-200/90 bg-purple-500/10 p-2.5 rounded-xl mb-4 border border-purple-500/20 flex items-center gap-2 font-semibold">
+              <span class="text-sm">⚡</span> 4 Players • Instant Auto-Start on 4/4
+            </div>
+          </div>
+          <button id="btn-queue-bluff" class="thulla-btn-purple w-full py-3 text-xs sm:text-sm font-black flex items-center justify-center gap-2 uppercase tracking-wide">
+            <span>🌐</span> Find Bluff Match
+          </button>
+        </div>
+
+        <!-- Card 3: Rang Worldwide -->
+        <div class="game-card-3d p-5 flex flex-col justify-between group border-emerald-500/40">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-3xl p-2 rounded-xl bg-emerald-500/20 border border-emerald-500/30">👑</span>
+              <span id="badge-queue-rang" class="game-card-header-badge bg-gradient-to-r from-emerald-500 to-teal-600 text-white border-emerald-800">
+                0 in queue
+              </span>
+            </div>
+            <h4 class="text-xl font-black text-white group-hover:text-emerald-400 transition mt-2">Rang Worldwide</h4>
+            <p class="text-xs text-slate-300 mt-1 mb-4 leading-relaxed font-medium">
+              Standard 4-Player Court Piece (Gandu Patta). Select the trump suit (Rang) with your partner and capture 7+ hands!
+            </p>
+            <div class="text-[11px] text-emerald-200/90 bg-emerald-500/10 p-2.5 rounded-xl mb-4 border border-emerald-500/20 flex items-center gap-2 font-semibold">
+              <span class="text-sm">⚡</span> 4 Players (2v2) • Auto-Starts
+            </div>
+          </div>
+          <button id="btn-queue-rang" class="thulla-btn-green w-full py-3 text-xs sm:text-sm font-black flex items-center justify-center gap-2 uppercase tracking-wide">
+            <span>🌐</span> Find Rang Match
+          </button>
         </div>
       </div>
     </div>
 
-    <!-- Primary Mode Switcher Tabs (3 Modes) -->
-    <div class="w-full max-w-3xl grid grid-cols-3 gap-1.5 p-1.5 bg-slate-900/90 border border-slate-800 rounded-2xl mb-6 shadow-inner">
-      <button id="tab-btn-friends" class="mode-tab-btn active py-2.5 px-2 rounded-xl text-xs sm:text-sm font-black transition flex items-center justify-center gap-1.5 sm:gap-2 bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 shadow-md">
-        <span>👥</span> Play with Friends
-      </button>
-      <button id="tab-btn-bots" class="mode-tab-btn py-2.5 px-2 rounded-xl text-xs sm:text-sm font-black text-slate-400 hover:text-white transition flex items-center justify-center gap-1.5 sm:gap-2">
-        <span>🤖</span> Play with Bots
-      </button>
-      <button id="tab-btn-worldwide" class="mode-tab-btn py-2.5 px-2 rounded-xl text-xs sm:text-sm font-black text-slate-400 hover:text-white transition flex items-center justify-center gap-1.5 sm:gap-2">
-        <span>🌍</span> Play Worldwide
-      </button>
-    </div>
-
-    <!-- ================= MODE 1: PLAY WITH FRIENDS ================= -->
-    <div id="section-friends" class="mode-section w-full max-w-4xl space-y-6">
-      <div class="text-center sm:text-left flex flex-col sm:flex-row items-center justify-between gap-2 border-b border-slate-800/80 pb-3">
+    <!-- ================= MODE 2: PLAY WITH FRIENDS ================= -->
+    <div id="section-friends" class="mode-section hidden w-full max-w-4xl space-y-4">
+      <div class="flex items-center justify-between border-b-2 border-amber-500/20 pb-2">
         <div>
-          <h3 class="text-base font-bold text-white flex items-center justify-center sm:justify-start gap-2">
+          <h3 class="text-base sm:text-lg font-black text-white flex items-center gap-2">
             <span>👥</span> Play with Friends • Private Tables
           </h3>
-          <p class="text-xs text-slate-400">Create a table for your favorite game and share the room link, or join an existing table.</p>
+          <p class="text-xs text-slate-400">Create a table for your friends and share the invite link, or join with a room code.</p>
         </div>
       </div>
 
       <!-- Game Cards Grid: Friends -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <!-- Card 1: Thulla -->
-        <div class="glass-panel p-5 border border-amber-500/20 hover:border-amber-500/50 transition flex flex-col justify-between group">
+        <!-- Card 1: Thulla Friends -->
+        <div class="game-card-3d p-5 flex flex-col justify-between group border-amber-500/40">
           <div>
-            <div class="flex items-center justify-between mb-3">
-              <span class="text-3xl p-2 rounded-xl bg-amber-500/10 border border-amber-500/20">🎴</span>
-              <span class="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                Pakistani Favorite
-              </span>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-3xl p-2 rounded-xl bg-amber-500/20 border border-amber-500/30">🎴</span>
+              <span class="game-card-header-badge">Pakistani Favorite</span>
             </div>
-            <h4 class="text-lg font-black text-white group-hover:text-amber-400 transition">Thulla (Bhabhi)</h4>
-            <p class="text-xs text-slate-400 mt-1 mb-4 leading-relaxed">
-              Shed all cards, follow suit, avoid penalties! Highest card takes the trick unless a Thulla is hit.
+            <h4 class="text-xl font-black text-white group-hover:text-amber-400 transition mt-2">Thulla Table</h4>
+            <p class="text-xs text-slate-300 mt-1 mb-4 leading-relaxed font-medium">
+              Custom table size for 2 to 8 friends. Pick up penalty tricks and crown the Thulla / Bhabhi!
             </p>
-            <div class="space-y-2 mb-4 bg-slate-900/60 p-2.5 rounded-xl border border-slate-800 text-xs">
-              <div class="flex justify-between items-center text-slate-300">
-                <span>Players:</span>
-                <select id="friends-thulla-players" class="bg-slate-800 border border-slate-700 rounded px-2 py-0.5 text-amber-400 font-bold focus:outline-none">
-                  <option value="2">2 Players</option>
-                  <option value="3">3 Players</option>
-                  <option value="4" selected>4 Players</option>
-                  <option value="5">5 Players</option>
-                  <option value="6">6 Players</option>
-                  <option value="8">8 Players</option>
-                </select>
-              </div>
+            <div class="bg-slate-900/80 p-2.5 rounded-xl border border-slate-700 mb-4 flex justify-between items-center text-xs">
+              <span class="text-slate-300 font-bold">Capacity:</span>
+              <select id="friends-thulla-players" class="bg-slate-800 border border-slate-600 rounded-lg px-2.5 py-1 text-amber-400 font-bold focus:outline-none">
+                <option value="2">2 Players</option>
+                <option value="3">3 Players</option>
+                <option value="4" selected>4 Players</option>
+                <option value="5">5 Players</option>
+                <option value="6">6 Players</option>
+                <option value="8">8 Players</option>
+              </select>
             </div>
           </div>
-          <button id="btn-create-thulla" class="casino-btn w-full py-2.5 text-xs font-bold">
+          <button id="btn-create-thulla" class="thulla-btn-gold w-full py-3 text-xs sm:text-sm font-black uppercase">
             Create Thulla Table
           </button>
         </div>
 
-        <!-- Card 2: Bluff -->
-        <div class="glass-panel p-5 border border-purple-500/20 hover:border-purple-500/50 transition flex flex-col justify-between group">
+        <!-- Card 2: Bluff Friends -->
+        <div class="game-card-3d p-5 flex flex-col justify-between group border-purple-500/40">
           <div>
-            <div class="flex items-center justify-between mb-3">
-              <span class="text-3xl p-2 rounded-xl bg-purple-500/10 border border-purple-500/20">🤫</span>
-              <span class="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30">
-                Mind Game
-              </span>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-3xl p-2 rounded-xl bg-purple-500/20 border border-purple-500/30">🤫</span>
+              <span class="game-card-header-badge bg-gradient-to-r from-purple-500 to-indigo-600 text-white border-purple-800">Mind Game</span>
             </div>
-            <h4 class="text-lg font-black text-white group-hover:text-purple-400 transition">Bluff (Cheat / 420)</h4>
-            <p class="text-xs text-slate-400 mt-1 mb-4 leading-relaxed">
-              Place cards face-down and declare ranks. Bluff your opponents or catch them lying to empty their hands!
+            <h4 class="text-xl font-black text-white group-hover:text-purple-400 transition mt-2">Bluff Table</h4>
+            <p class="text-xs text-slate-300 mt-1 mb-4 leading-relaxed font-medium">
+              Private room for 2 to 6 friends. Lie without flinching and call your friends' bluff!
             </p>
-            <div class="space-y-2 mb-4 bg-slate-900/60 p-2.5 rounded-xl border border-slate-800 text-xs">
-              <div class="flex justify-between items-center text-slate-300">
-                <span>Players:</span>
-                <select id="friends-bluff-players" class="bg-slate-800 border border-slate-700 rounded px-2 py-0.5 text-purple-400 font-bold focus:outline-none">
-                  <option value="2">2 Players</option>
-                  <option value="3">3 Players</option>
-                  <option value="4" selected>4 Players</option>
-                  <option value="5">5 Players</option>
-                  <option value="6">6 Players</option>
-                </select>
-              </div>
+            <div class="bg-slate-900/80 p-2.5 rounded-xl border border-slate-700 mb-4 flex justify-between items-center text-xs">
+              <span class="text-slate-300 font-bold">Capacity:</span>
+              <select id="friends-bluff-players" class="bg-slate-800 border border-slate-600 rounded-lg px-2.5 py-1 text-purple-400 font-bold focus:outline-none">
+                <option value="2">2 Players</option>
+                <option value="3">3 Players</option>
+                <option value="4" selected>4 Players</option>
+                <option value="5">5 Players</option>
+                <option value="6">6 Players</option>
+              </select>
             </div>
           </div>
-          <button id="btn-create-bluff" class="casino-btn secondary w-full py-2.5 text-xs font-bold border-purple-500/40 text-purple-300 hover:bg-purple-600 hover:text-white">
+          <button id="btn-create-bluff" class="thulla-btn-purple w-full py-3 text-xs sm:text-sm font-black uppercase">
             Create Bluff Table
           </button>
         </div>
 
-        <!-- Card 3: Rang -->
-        <div class="glass-panel p-5 border border-emerald-500/20 hover:border-emerald-500/50 transition flex flex-col justify-between group">
+        <!-- Card 3: Rang Friends -->
+        <div class="game-card-3d p-5 flex flex-col justify-between group border-emerald-500/40">
           <div>
-            <div class="flex items-center justify-between mb-3">
-              <span class="text-3xl p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20">👑</span>
-              <span class="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                Partnership
-              </span>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-3xl p-2 rounded-xl bg-emerald-500/20 border border-emerald-500/30">👑</span>
+              <span class="game-card-header-badge bg-gradient-to-r from-emerald-500 to-teal-600 text-white border-emerald-800">Partnership</span>
             </div>
-            <h4 class="text-lg font-black text-white group-hover:text-emerald-400 transition">Rang (Court Piece)</h4>
-            <p class="text-xs text-slate-400 mt-1 mb-4 leading-relaxed">
-              Traditional 4-player partnership (Gandu Patta). Select the trump suit (Rang) and capture 7+ hands to win.
+            <h4 class="text-xl font-black text-white group-hover:text-emerald-400 transition mt-2">Rang Table</h4>
+            <p class="text-xs text-slate-300 mt-1 mb-4 leading-relaxed font-medium">
+              Traditional 4-player partnership Court Piece. Form 2 teams with friends and conquer the table!
             </p>
-            <div class="space-y-2 mb-4 bg-slate-900/60 p-2.5 rounded-xl border border-slate-800 text-xs">
-              <div class="flex justify-between items-center text-slate-300">
-                <span>Format:</span>
-                <span class="font-bold text-emerald-400">4 Players (2 vs 2)</span>
-              </div>
+            <div class="bg-slate-900/80 p-2.5 rounded-xl border border-slate-700 mb-4 flex justify-between items-center text-xs">
+              <span class="text-slate-300 font-bold">Format:</span>
+              <span class="font-bold text-emerald-400">4 Players (2 vs 2)</span>
             </div>
           </div>
-          <button id="btn-create-rang" class="casino-btn secondary w-full py-2.5 text-xs font-bold border-emerald-500/40 text-emerald-300 hover:bg-emerald-600 hover:text-white">
+          <button id="btn-create-rang" class="thulla-btn-green w-full py-3 text-xs sm:text-sm font-black uppercase">
             Create Rang Table
           </button>
         </div>
       </div>
 
       <!-- Join Existing Table Box -->
-      <div class="glass-panel p-4 border border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-900/60">
+      <div class="glass-panel p-4 border-2 border-amber-500/30 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xl">
         <div class="flex items-center gap-3 w-full sm:w-auto">
-          <span class="text-2xl">🚪</span>
+          <span class="text-3xl">🚪</span>
           <div>
-            <h5 class="text-xs font-bold text-white">Join Friend's Table</h5>
-            <p class="text-[11px] text-slate-400">Have a 6-digit room code from a friend?</p>
+            <h5 class="text-sm font-extrabold text-white">Join Friend's Table</h5>
+            <p class="text-xs text-slate-400">Have a 6-digit room code from a friend?</p>
           </div>
         </div>
         <div class="flex items-center gap-2 w-full sm:w-auto">
           <input type="text" id="join-room-code" placeholder="ROOM CODE" maxlength="6"
-            class="uppercase font-mono tracking-widest text-center text-xs bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-amber-400 font-bold focus:outline-none focus:border-amber-500 transition w-full sm:w-32">
-          <button id="join-room-btn" class="casino-btn secondary py-2 px-4 text-xs font-bold flex-shrink-0">
+            class="uppercase font-mono tracking-widest text-center text-sm bg-slate-950 border-2 border-amber-500/40 rounded-xl px-3 py-2.5 text-amber-400 font-black focus:outline-none focus:border-amber-400 transition w-full sm:w-36">
+          <button id="join-room-btn" class="thulla-btn-gold py-2.5 px-5 text-xs font-black flex-shrink-0 uppercase">
             Join Table
           </button>
         </div>
       </div>
     </div>
 
-    <!-- ================= MODE 2: PLAY WITH BOTS ================= -->
-    <div id="section-bots" class="mode-section hidden w-full max-w-4xl space-y-6">
-      <div class="text-center sm:text-left flex flex-col sm:flex-row items-center justify-between gap-3 border-b border-slate-800/80 pb-3">
+    <!-- ================= MODE 3: PLAY WITH BOTS ================= -->
+    <div id="section-bots" class="mode-section hidden w-full max-w-4xl space-y-4">
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-2 border-b-2 border-amber-500/20 pb-2">
         <div>
-          <h3 class="text-base font-bold text-white flex items-center justify-center sm:justify-start gap-2">
+          <h3 class="text-base sm:text-lg font-black text-white flex items-center gap-2">
             <span>🤖</span> Play Solo vs AI Bots
           </h3>
-          <p class="text-xs text-slate-400">Instant solo play without waiting. Challenge smart, reactive AI bots!</p>
+          <p class="text-xs text-slate-400">Instant offline practice without waiting. Challenge smart, human-like AI bots!</p>
         </div>
-        <div class="flex items-center gap-2 bg-slate-900/80 px-3 py-1.5 rounded-xl border border-slate-800 text-xs">
-          <span class="text-slate-400 font-medium">Bot Opponents:</span>
-          <select id="bots-count-select" class="bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1 text-xs font-bold text-amber-400 focus:outline-none focus:border-amber-500">
+        <div class="flex items-center gap-2 bg-slate-900/90 px-3 py-1.5 rounded-xl border border-slate-700 text-xs">
+          <span class="text-slate-300 font-bold">Bot Opponents:</span>
+          <select id="bots-count-select" class="bg-slate-800 border border-slate-600 rounded-lg px-2.5 py-1 text-xs font-bold text-amber-400 focus:outline-none">
             <option value="2">2 Bots (3 Players)</option>
             <option value="3" selected>3 Bots (4 Players)</option>
             <option value="4">4 Bots (5 Players)</option>
@@ -241,147 +325,177 @@
       <!-- Game Cards Grid: Bots -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <!-- Card 1: Thulla vs Bots -->
-        <div class="glass-panel p-5 border border-amber-500/20 hover:border-amber-500/50 transition flex flex-col justify-between group">
+        <div class="game-card-3d p-5 flex flex-col justify-between group border-amber-500/40">
           <div>
-            <div class="flex items-center justify-between mb-3">
-              <span class="text-3xl p-2 rounded-xl bg-amber-500/10 border border-amber-500/20">🎴</span>
-              <span class="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                Instant Play
-              </span>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-3xl p-2 rounded-xl bg-amber-500/20 border border-amber-500/30">🎴</span>
+              <span class="game-card-header-badge">Instant Solo</span>
             </div>
-            <h4 class="text-lg font-black text-white group-hover:text-amber-400 transition">Thulla vs Bots</h4>
-            <p class="text-xs text-slate-400 mt-1 mb-4 leading-relaxed">
-              Outsmart the bots, save your power cards, bait them into picking up penalty tricks, and clear your hand!
+            <h4 class="text-xl font-black text-white group-hover:text-amber-400 transition mt-2">Thulla vs Bots</h4>
+            <p class="text-xs text-slate-300 mt-1 mb-4 leading-relaxed font-medium">
+              Test your skills against smart AI bots. Watch for Thulla hits, save high cards, and avoid penalty tricks!
             </p>
           </div>
-          <button id="btn-bots-thulla" class="casino-btn w-full py-2.5 text-xs font-black shadow-lg shadow-amber-500/20">
+          <button id="btn-bots-thulla" class="thulla-btn-gold w-full py-3 text-xs sm:text-sm font-black uppercase">
             ▶ Play Thulla vs Bots
           </button>
         </div>
 
         <!-- Card 2: Bluff vs Bots -->
-        <div class="glass-panel p-5 border border-purple-500/20 hover:border-purple-500/50 transition flex flex-col justify-between group">
+        <div class="game-card-3d p-5 flex flex-col justify-between group border-purple-500/40">
           <div>
-            <div class="flex items-center justify-between mb-3">
-              <span class="text-3xl p-2 rounded-xl bg-purple-500/10 border border-purple-500/20">🤫</span>
-              <span class="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                Instant Play
-              </span>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-3xl p-2 rounded-xl bg-purple-500/20 border border-purple-500/30">🤫</span>
+              <span class="game-card-header-badge bg-gradient-to-r from-purple-500 to-indigo-600 text-white border-purple-800">Instant Solo</span>
             </div>
-            <h4 class="text-lg font-black text-white group-hover:text-purple-400 transition">Bluff vs Bots</h4>
-            <p class="text-xs text-slate-400 mt-1 mb-4 leading-relaxed">
-              Place secret cards, test the bots' bluff detection instincts, and catch them red-handed when they lie!
+            <h4 class="text-xl font-black text-white group-hover:text-purple-400 transition mt-2">Bluff vs Bots</h4>
+            <p class="text-xs text-slate-300 mt-1 mb-4 leading-relaxed font-medium">
+              Place secret cards, test the bots' bluff detector instincts, and catch them lying red-handed!
             </p>
           </div>
-          <button id="btn-bots-bluff" class="casino-btn secondary w-full py-2.5 text-xs font-black border-purple-500/40 text-purple-300 hover:bg-purple-600 hover:text-white shadow-lg">
+          <button id="btn-bots-bluff" class="thulla-btn-purple w-full py-3 text-xs sm:text-sm font-black uppercase">
             ▶ Play Bluff vs Bots
           </button>
         </div>
 
         <!-- Card 3: Rang vs Bots -->
-        <div class="glass-panel p-5 border border-emerald-500/20 hover:border-emerald-500/50 transition flex flex-col justify-between group">
+        <div class="game-card-3d p-5 flex flex-col justify-between group border-emerald-500/40">
           <div>
-            <div class="flex items-center justify-between mb-3">
-              <span class="text-3xl p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20">👑</span>
-              <span class="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                Instant Play
-              </span>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-3xl p-2 rounded-xl bg-emerald-500/20 border border-emerald-500/30">👑</span>
+              <span class="game-card-header-badge bg-gradient-to-r from-emerald-500 to-teal-600 text-white border-emerald-800">Instant Solo</span>
             </div>
-            <h4 class="text-lg font-black text-white group-hover:text-emerald-400 transition">Rang vs Bots</h4>
-            <p class="text-xs text-slate-400 mt-1 mb-4 leading-relaxed">
-              Play with an AI partner against 2 opposing bots. Pick the trump suit (Rang) and conquer 7+ hands!
+            <h4 class="text-xl font-black text-white group-hover:text-emerald-400 transition mt-2">Rang vs Bots</h4>
+            <p class="text-xs text-slate-300 mt-1 mb-4 leading-relaxed font-medium">
+              Play with an AI partner against 2 opposing bots. Select the trump suit (Rang) and capture 7+ hands!
             </p>
           </div>
-          <button id="btn-bots-rang" class="casino-btn secondary w-full py-2.5 text-xs font-black border-emerald-500/40 text-emerald-300 hover:bg-emerald-600 hover:text-white shadow-lg">
+          <button id="btn-bots-rang" class="thulla-btn-green w-full py-3 text-xs sm:text-sm font-black uppercase">
             ▶ Play Rang vs Bots
           </button>
         </div>
       </div>
     </div>
+  </main>
 
-    <!-- ================= MODE 3: PLAY WORLDWIDE ================= -->
-    <div id="section-worldwide" class="mode-section hidden w-full max-w-4xl space-y-6">
-      <div class="text-center sm:text-left flex flex-col sm:flex-row items-center justify-between gap-3 border-b border-slate-800/80 pb-3">
+  <!-- ================= FLOATING MOBILE GAME DOCK (Like Screenshot) ================= -->
+  <nav class="mobile-app-dock">
+    <button id="dock-btn-friends" class="dock-item-btn" title="Play with Friends">
+      <span class="dock-icon">👥</span>
+      <span>Friends</span>
+    </button>
+
+    <button id="dock-btn-bots" class="dock-item-btn" title="Play vs Bots">
+      <span class="dock-icon">🤖</span>
+      <span>VS Bots</span>
+    </button>
+
+    <!-- Elevated King Center Button -->
+    <button id="dock-btn-play" class="dock-item-btn center-king-btn active" title="Play Worldwide">
+      <span class="dock-icon">👑</span>
+      <span class="font-black text-[12px] tracking-wide text-black">PLAY</span>
+    </button>
+
+    <button id="dock-btn-leaderboard" class="dock-item-btn" title="Leaderboard">
+      <span class="dock-icon">🏆</span>
+      <span>Rank</span>
+    </button>
+
+    <button id="dock-btn-rules" class="dock-item-btn" title="Game Rules">
+      <span class="dock-icon">📖</span>
+      <span>Rules</span>
+    </button>
+  </nav>
+
+  <!-- ================= EDIT PROFILE MODAL ================= -->
+  <div id="modal-profile-edit" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="glass-panel w-full max-w-sm p-6 border-2 border-amber-500/40 text-center relative shadow-2xl">
+      <div class="w-16 h-16 mx-auto mb-3 rounded-full border-4 border-amber-400 bg-slate-900 flex items-center justify-center text-3xl shadow-lg">
+        <span id="modal-profile-avatar-preview">🦊</span>
+      </div>
+      <h3 class="text-lg font-black text-white mb-1">Your ThullaKing Profile</h3>
+      <p class="text-xs text-slate-400 mb-4">Choose your nickname and avatar visible to all players.</p>
+
+      <div class="space-y-4 text-left">
         <div>
-          <h3 class="text-base font-bold text-white flex items-center justify-center sm:justify-start gap-2">
-            <span>🌍</span> Play Worldwide • 4-Player Matchmaking
-          </h3>
-          <p class="text-xs text-slate-400">Join a global table of 4 players. As soon as 4 slots are full worldwide, match starts automatically!</p>
+          <label class="block text-xs font-bold text-slate-300 mb-1">Nickname</label>
+          <input type="text" id="global-player-name" placeholder="Enter nickname" maxlength="14"
+            class="w-full bg-slate-950 border-2 border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white font-bold focus:outline-none focus:border-amber-400 transition">
         </div>
-        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold">
-          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span> Live Global Matchmaking
+
+        <div>
+          <label class="block text-xs font-bold text-slate-300 mb-1">Pick Avatar</label>
+          <div id="avatar-picker-global" class="flex gap-2 overflow-x-auto pb-1">
+            <!-- Avatars rendered via JS -->
+          </div>
         </div>
       </div>
 
-      <!-- Game Cards Grid: Worldwide -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <!-- Card 1: Thulla Worldwide -->
-        <div class="glass-panel p-5 border border-amber-500/30 hover:border-amber-500/70 transition flex flex-col justify-between group shadow-lg">
-          <div>
-            <div class="flex items-center justify-between mb-3">
-              <span class="text-3xl p-2 rounded-xl bg-amber-500/10 border border-amber-500/20">🎴</span>
-              <span id="badge-queue-thulla" class="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                0 in queue
-              </span>
-            </div>
-            <h4 class="text-lg font-black text-white group-hover:text-amber-400 transition">Thulla Worldwide</h4>
-            <p class="text-xs text-slate-400 mt-1 mb-4 leading-relaxed">
-              Match with 3 players worldwide. 4-player table (13 cards each). Instant battle with real card lovers across the world!
-            </p>
-            <div class="text-[11px] text-slate-400 bg-slate-900/60 p-2 rounded-xl mb-4 border border-slate-800 flex items-center gap-1.5">
-              <span>⚡</span> 4 Slots • Auto-starts when 4th player arrives
-            </div>
-          </div>
-          <button id="btn-queue-thulla" class="casino-btn w-full py-2.5 text-xs font-black shadow-lg shadow-amber-500/20 flex items-center justify-center gap-1.5">
-            <span>🌐</span> Find Thulla Match
-          </button>
-        </div>
-
-        <!-- Card 2: Bluff Worldwide -->
-        <div class="glass-panel p-5 border border-purple-500/30 hover:border-purple-500/70 transition flex flex-col justify-between group shadow-lg">
-          <div>
-            <div class="flex items-center justify-between mb-3">
-              <span class="text-3xl p-2 rounded-xl bg-purple-500/10 border border-purple-500/20">🤫</span>
-              <span id="badge-queue-bluff" class="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30">
-                0 in queue
-              </span>
-            </div>
-            <h4 class="text-lg font-black text-white group-hover:text-purple-400 transition">Bluff Worldwide</h4>
-            <p class="text-xs text-slate-400 mt-1 mb-4 leading-relaxed">
-              High-stakes 4-player Bluff showdown with real international players. Bluff your way to the top!
-            </p>
-            <div class="text-[11px] text-slate-400 bg-slate-900/60 p-2 rounded-xl mb-4 border border-slate-800 flex items-center gap-1.5">
-              <span>⚡</span> 4 Slots • Auto-starts when 4th player arrives
-            </div>
-          </div>
-          <button id="btn-queue-bluff" class="casino-btn secondary w-full py-2.5 text-xs font-black border-purple-500/50 text-purple-300 hover:bg-purple-600 hover:text-white shadow-lg flex items-center justify-center gap-1.5">
-            <span>🌐</span> Find Bluff Match
-          </button>
-        </div>
-
-        <!-- Card 3: Rang Worldwide -->
-        <div class="glass-panel p-5 border border-emerald-500/30 hover:border-emerald-500/70 transition flex flex-col justify-between group shadow-lg">
-          <div>
-            <div class="flex items-center justify-between mb-3">
-              <span class="text-3xl p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20">👑</span>
-              <span id="badge-queue-rang" class="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                0 in queue
-              </span>
-            </div>
-            <h4 class="text-lg font-black text-white group-hover:text-emerald-400 transition">Rang Worldwide</h4>
-            <p class="text-xs text-slate-400 mt-1 mb-4 leading-relaxed">
-              Standard 4-player partnership Court Piece with players worldwide. 2 vs 2 partnership match!
-            </p>
-            <div class="text-[11px] text-slate-400 bg-slate-900/60 p-2 rounded-xl mb-4 border border-slate-800 flex items-center gap-1.5">
-              <span>⚡</span> 4 Slots • Auto-starts when 4th player arrives
-            </div>
-          </div>
-          <button id="btn-queue-rang" class="casino-btn secondary w-full py-2.5 text-xs font-black border-emerald-500/50 text-emerald-300 hover:bg-emerald-600 hover:text-white shadow-lg flex items-center justify-center gap-1.5">
-            <span>🌐</span> Find Rang Match
-          </button>
-        </div>
-      </div>
+      <button id="btn-save-profile" class="thulla-btn-gold w-full py-3 mt-5 text-xs font-black uppercase">
+        ✓ Save Profile
+      </button>
     </div>
+  </div>
+
+  <!-- ================= LEADERBOARD MODAL ================= -->
+  <div id="modal-leaderboard" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="glass-panel w-full max-w-md p-6 border-2 border-amber-500/40 text-center relative shadow-2xl">
+      <div class="text-3xl mb-1">🏆</div>
+      <h3 class="text-xl font-black text-white mb-1">ThullaKing Leaderboard</h3>
+      <p class="text-xs text-amber-300 font-bold mb-4 uppercase tracking-wider">Top Card Masters This Week</p>
+
+      <div class="space-y-2 mb-6">
+        <div class="flex items-center justify-between p-2.5 rounded-xl bg-amber-500/20 border border-amber-500/40 text-xs font-bold">
+          <div class="flex items-center gap-2.5">
+            <span class="text-lg">🥇</span>
+            <span class="text-xl">🦁</span>
+            <div class="text-left">
+              <div class="text-white">Shahid_King 🇵🇰</div>
+              <div class="text-[10px] text-amber-300">Level 48 • VIP 3</div>
+            </div>
+          </div>
+          <div class="text-right">
+            <div class="text-amber-400 font-mono font-black">🪙 1,480,000</div>
+            <div class="text-[10px] text-slate-400">92 Wins</div>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-800/80 border border-slate-700 text-xs font-bold">
+          <div class="flex items-center gap-2.5">
+            <span class="text-lg">🥈</span>
+            <span class="text-xl">🥷</span>
+            <div class="text-left">
+              <div class="text-white">Hamza_CardPro 🇦🇪</div>
+              <div class="text-[10px] text-slate-400">Level 36 • VIP 2</div>
+            </div>
+          </div>
+          <div class="text-right">
+            <div class="text-amber-400 font-mono font-black">🪙 950,000</div>
+            <div class="text-[10px] text-slate-400">68 Wins</div>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-800/80 border border-slate-700 text-xs font-bold">
+          <div class="flex items-center gap-2.5">
+            <span class="text-lg">🥉</span>
+            <span class="text-xl">🐯</span>
+            <div class="text-left">
+              <div class="text-white">BhabhiCrusher 🇬🇧</div>
+              <div class="text-[10px] text-slate-400">Level 29 • VIP 1</div>
+            </div>
+          </div>
+          <div class="text-right">
+            <div class="text-amber-400 font-mono font-black">🪙 710,000</div>
+            <div class="text-[10px] text-slate-400">54 Wins</div>
+          </div>
+        </div>
+      </div>
+
+      <button id="btn-close-leaderboard" class="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs font-bold">
+        Close Leaderboard
+      </button>
+    </div>
+  </div>
   </main>
 
   <!-- ================= WORLDWIDE MATCHMAKING WAITING MODAL ================= -->

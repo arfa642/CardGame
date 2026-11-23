@@ -242,7 +242,42 @@ function switchScreen(screen) {
   }
 }
 
-// --- PROFILE & MODE HELPERS ---
+// --- PROFILE & COIN HELPERS ---
+
+function getUserCoins() {
+  return parseInt(localStorage.getItem('thulla_user_coins')) || 50000;
+}
+
+function addCoins(amount) {
+  const current = getUserCoins();
+  const next = current + amount;
+  localStorage.setItem('thulla_user_coins', next);
+  updateCoinsDisplay();
+  return next;
+}
+
+function updateCoinsDisplay() {
+  const display = document.getElementById('user-coins-display');
+  if (display) {
+    display.innerText = getUserCoins().toLocaleString();
+  }
+}
+
+function updateProfileUI() {
+  const savedName = localStorage.getItem('thulla_player_name') || 'Player';
+  const savedAvatar = localStorage.getItem('thulla_player_avatar') || selectedAvatar;
+  const headerName = document.getElementById('header-player-name');
+  const headerAvatar = document.getElementById('header-avatar-emoji');
+  const modalAvatarPreview = document.getElementById('modal-profile-avatar-preview');
+  const globalInput = document.getElementById('global-player-name');
+
+  if (headerName) headerName.innerText = savedName;
+  if (headerAvatar) headerAvatar.innerText = savedAvatar;
+  if (modalAvatarPreview) modalAvatarPreview.innerText = savedAvatar;
+  if (globalInput) globalInput.value = savedName;
+
+  updateCoinsDisplay();
+}
 
 function getPlayerProfile() {
   const globalInput = document.getElementById('global-player-name');
@@ -250,26 +285,30 @@ function getPlayerProfile() {
   if (!name) name = localStorage.getItem('thulla_player_name') || 'Player';
   localStorage.setItem('thulla_player_name', name);
   localStorage.setItem('thulla_player_avatar', selectedAvatar);
+  updateProfileUI();
   return { name, avatar: selectedAvatar };
 }
 
 function switchMainTab(mode) {
   const tabs = [
-    { id: 'tab-btn-friends', sec: 'section-friends', activeGrad: 'from-amber-500 to-amber-600' },
-    { id: 'tab-btn-bots', sec: 'section-bots', activeGrad: 'from-emerald-500 to-teal-600' },
-    { id: 'tab-btn-worldwide', sec: 'section-worldwide', activeGrad: 'from-blue-500 to-indigo-600' }
+    { id: 'tab-btn-friends', dockId: 'dock-btn-friends', sec: 'section-friends' },
+    { id: 'tab-btn-bots', dockId: 'dock-btn-bots', sec: 'section-bots' },
+    { id: 'tab-btn-worldwide', dockId: 'dock-btn-play', sec: 'section-worldwide' }
   ];
 
   tabs.forEach(t => {
     const btn = document.getElementById(t.id);
+    const dockBtn = document.getElementById(t.dockId);
     const sec = document.getElementById(t.sec);
-    if (!btn || !sec) return;
+    if (!sec) return;
 
     if (t.id === `tab-btn-${mode}`) {
-      btn.className = `mode-tab-btn active py-2.5 px-2 rounded-xl text-xs sm:text-sm font-black transition flex items-center justify-center gap-1.5 sm:gap-2 bg-gradient-to-r ${t.activeGrad} text-slate-950 shadow-md`;
+      if (btn) btn.className = 'mode-tab-btn active py-2.5 px-2 rounded-xl text-xs sm:text-sm font-black transition flex items-center justify-center gap-1.5 thulla-btn-gold';
+      if (dockBtn) dockBtn.classList.add('active');
       sec.classList.remove('hidden');
     } else {
-      btn.className = 'mode-tab-btn py-2.5 px-2 rounded-xl text-xs sm:text-sm font-black text-slate-400 hover:text-white transition flex items-center justify-center gap-1.5 sm:gap-2';
+      if (btn) btn.className = 'mode-tab-btn py-2.5 px-2 rounded-xl text-xs sm:text-sm font-black text-slate-300 hover:text-white transition flex items-center justify-center gap-1.5';
+      if (dockBtn) dockBtn.classList.remove('active');
       sec.classList.add('hidden');
     }
   });
@@ -538,6 +577,58 @@ if (btnQueueThulla) btnQueueThulla.addEventListener('click', () => startMatchmak
 if (btnQueueBluff) btnQueueBluff.addEventListener('click', () => startMatchmaking('bluff'));
 if (btnQueueRang) btnQueueRang.addEventListener('click', () => startMatchmaking('rang'));
 if (btnCancelMatchmaking) btnCancelMatchmaking.addEventListener('click', () => cancelMatchmaking());
+
+// Profile Edit Modal
+const btnOpenProfile = document.getElementById('btn-open-profile');
+const modalProfileEdit = document.getElementById('modal-profile-edit');
+const btnSaveProfile = document.getElementById('btn-save-profile');
+
+if (btnOpenProfile && modalProfileEdit) {
+  btnOpenProfile.addEventListener('click', () => {
+    updateProfileUI();
+    modalProfileEdit.classList.remove('hidden');
+  });
+}
+
+if (btnSaveProfile && modalProfileEdit) {
+  btnSaveProfile.addEventListener('click', () => {
+    getPlayerProfile();
+    modalProfileEdit.classList.add('hidden');
+    showToast('👑 Profile updated successfully!');
+  });
+}
+
+// Close modals on outside tap
+[modalProfileEdit, document.getElementById('modal-leaderboard')].forEach(m => {
+  if (m) {
+    m.addEventListener('click', (e) => {
+      if (e.target === m) m.classList.add('hidden');
+    });
+  }
+});
+
+// Leaderboard Modal
+const dockBtnLeaderboard = document.getElementById('dock-btn-leaderboard');
+const modalLeaderboard = document.getElementById('modal-leaderboard');
+const btnCloseLeaderboard = document.getElementById('btn-close-leaderboard');
+
+if (dockBtnLeaderboard && modalLeaderboard) {
+  dockBtnLeaderboard.addEventListener('click', () => modalLeaderboard.classList.remove('hidden'));
+}
+if (btnCloseLeaderboard && modalLeaderboard) {
+  btnCloseLeaderboard.addEventListener('click', () => modalLeaderboard.classList.add('hidden'));
+}
+
+// Dock Navigation Buttons (Mobile App Style)
+const dockBtnFriends = document.getElementById('dock-btn-friends');
+const dockBtnBots = document.getElementById('dock-btn-bots');
+const dockBtnPlay = document.getElementById('dock-btn-play');
+const dockBtnRules = document.getElementById('dock-btn-rules');
+
+if (dockBtnFriends) dockBtnFriends.addEventListener('click', () => switchMainTab('friends'));
+if (dockBtnBots) dockBtnBots.addEventListener('click', () => switchMainTab('bots'));
+if (dockBtnPlay) dockBtnPlay.addEventListener('click', () => switchMainTab('worldwide'));
+if (dockBtnRules) dockBtnRules.addEventListener('click', () => modalRules && modalRules.classList.remove('hidden'));
 
 // Lobby Preset Bot Buttons (2 to 6 bots)
 document.addEventListener('click', (e) => {
@@ -1239,6 +1330,18 @@ function renderGameOverModal(state) {
     loserName.innerText = 'Everyone is Safe!';
   }
 
+  // Award Coins to winner
+  const myWinnerRecord = state.winners.find(w => w.id === myPlayerId);
+  if (myWinnerRecord) {
+    if (myWinnerRecord.rank === 1) {
+      addCoins(5000);
+      showToast('👑 KING VICTORY! +5,000 Coins added!');
+    } else if (myWinnerRecord.rank === 2) {
+      addCoins(2500);
+      showToast('🥈 2nd Place! +2,500 Coins added!');
+    }
+  }
+
   // Only host can click "Play Again"
   btnPlayAgain.style.display = isHost ? 'inline-flex' : 'none';
 }
@@ -1422,24 +1525,14 @@ socket.on('match_found', ({ roomId, gameType, playerId, isHost: hostStatus }) =>
 // Initialize on Load
 window.addEventListener('DOMContentLoaded', () => {
   setupAvatarPickers();
-  // Restore saved player profile if any
-  const savedName = localStorage.getItem('thulla_player_name');
-  if (savedName) {
-    const globalInput = document.getElementById('global-player-name');
-    if (globalInput) globalInput.value = savedName;
-    if (createPlayerName) createPlayerName.value = savedName;
-    if (joinPlayerName) joinPlayerName.value = savedName;
-  }
-  const savedAvatar = localStorage.getItem('thulla_player_avatar');
-  if (savedAvatar) {
-    selectedAvatar = savedAvatar;
-    setupAvatarPickers();
-  }
+  updateProfileUI();
+  switchMainTab('worldwide');
 
   const globalInput = document.getElementById('global-player-name');
   if (globalInput) {
     globalInput.addEventListener('input', (e) => {
       localStorage.setItem('thulla_player_name', e.target.value.trim());
+      updateProfileUI();
     });
   }
 

@@ -777,7 +777,7 @@ io.on('connection', (socket) => {
 
 server.listen(PORT, () => {
   console.log(`========================================`);
-  console.log(`🎴 Thulla Card Game Server Running!`);
+  console.log(`👑 ThullaKing Card Game Server Running!`);
   console.log(`🌐 Local:   http://localhost:${PORT}`);
   console.log(`🎮 Ready for 2 to 10 players & AI Bots!`);
   console.log(`========================================`);
