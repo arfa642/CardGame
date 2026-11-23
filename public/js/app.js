@@ -14,6 +14,7 @@ let currentGameState = null;
 let selectedAvatar = '🦊';
 let isTrickFrozen = false;
 let trickFreezeTimer = null;
+let selectedBluffCardIds = new Set();
 
 // Avatars list
 const AVATARS = ['🦊', '🐼', '🦁', '🐯', '🤖', '🦄', '🐸', '🧙', '🥷', '🚀'];
@@ -126,19 +127,47 @@ function setupAvatarPickers() {
   });
 }
 
-// Read URL parameters on load
-function parseURLParams() {
+// Read URL parameters on load and direct join if room code is present!
+function parseURLParamsAndDirectJoin() {
   const params = new URLSearchParams(window.location.search);
-  const roomParam = params.get('room');
-  if (roomParam) {
-    joinRoomCode.value = roomParam.trim().toUpperCase();
-  } else {
-    // Check path /room/XYZ
+  let roomCode = params.get('room');
+  if (!roomCode) {
     const pathParts = window.location.pathname.split('/');
     if (pathParts[1] === 'room' && pathParts[2]) {
-      joinRoomCode.value = pathParts[2].trim().toUpperCase();
+      roomCode = pathParts[2];
     }
   }
+
+  if (roomCode) {
+    roomCode = roomCode.trim().toUpperCase();
+    joinRoomCode.value = roomCode;
+
+    // DIRECT TABLE JOIN (bypasses website home completely!)
+    const savedName = localStorage.getItem('thulla_player_name') || `Player_${Math.floor(100 + Math.random() * 900)}`;
+    const savedAvatar = localStorage.getItem('thulla_player_avatar') || selectedAvatar;
+
+    showToast(`Joining table ${roomCode}...`);
+
+    socket.emit('join_room', {
+      roomId: roomCode,
+      playerName: savedName,
+      avatar: savedAvatar
+    }, (res) => {
+      if (res && res.success) {
+        myPlayerId = res.playerId;
+        currentRoomId = res.roomId;
+        isHost = res.isHost;
+        setupLobbyView(res.gameState);
+        switchScreen('lobby');
+        showToast(`🎉 Joined Table ${res.roomId} directly!`);
+      } else {
+        showToast(res ? res.error : 'Room not found or full', 'error');
+        switchScreen('landing');
+      }
+    });
+    return true;
+  }
+  return false;
 }
 
 // Generate full shareable link
@@ -185,11 +214,16 @@ createRoomBtn.addEventListener('click', () => {
   const name = createPlayerName.value.trim() || 'Player 1';
   const maxPlayers = parseInt(createMaxPlayers.value) || 4;
   const deckMode = createDeckMode.value;
+  const gameTypeSelect = document.getElementById('create-game-type');
+  const gameType = gameTypeSelect ? gameTypeSelect.value : 'thulla';
+
+  localStorage.setItem('thulla_player_name', name);
+  localStorage.setItem('thulla_player_avatar', selectedAvatar);
 
   socket.emit('create_room', {
     hostName: name,
     avatar: selectedAvatar,
-    options: { maxPlayers, deckCount: deckMode }
+    options: { maxPlayers, deckCount: deckMode, gameType }
   }, (res) => {
     if (res.success) {
       myPlayerId = res.playerId;
@@ -212,6 +246,9 @@ joinRoomBtn.addEventListener('click', () => {
   if (!code) {
     return showToast('Please enter a 6-character room code', 'error');
   }
+
+  localStorage.setItem('thulla_player_name', name);
+  localStorage.setItem('thulla_player_avatar', selectedAvatar);
 
   socket.emit('join_room', {
     roomId: code,
@@ -345,6 +382,111 @@ chatForm.addEventListener('submit', (e) => {
   }
 });
 
+// Quick Chat Chips
+document.addEventListener('click', (e) => {
+  if (e.target && e.target.classList.contains('chat-chip')) {
+    const phrase = e.target.innerText.trim();
+    if (phrase && currentRoomId) {
+      socket.emit('send_chat', { roomId: currentRoomId, message: phrase });
+    }
+  }
+});
+
+// Lobby Live Chat
+const lobbyChatForm = document.getElementById('lobby-chat-form');
+const lobbyChatInput = document.getElementById('lobby-chat-input');
+const lobbyChatMessages = document.getElementById('lobby-chat-messages');
+
+if (lobbyChatForm) {
+  lobbyChatForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const text = lobbyChatInput.value.trim();
+    if (text && currentRoomId) {
+      socket.emit('send_chat', { roomId: currentRoomId, message: text });
+      lobbyChatInput.value = '';
+    }
+  });
+}
+
+// Show Chat Bubble over Player Avatar
+function showChatBubble(playerId, text) {
+  const seat = document.getElementById(`seat-${playerId}`);
+  if (!seat) return;
+  const bubble = document.createElement('div');
+  bubble.className = 'chat-speech-bubble';
+  bubble.innerText = text;
+  seat.appendChild(bubble);
+
+  setTimeout(() => {
+    bubble.remove();
+  }, 4000);
+}
+
+// Lobby Game Mode Select
+const lobbyGameModeSelect = document.getElementById('lobby-game-mode-select');
+if (lobbyGameModeSelect) {
+  lobbyGameModeSelect.addEventListener('change', (e) => {
+    if (currentRoomId && isHost) {
+      socket.emit('change_game_type', { roomId: currentRoomId, gameType: e.target.value }, (res) => {
+        if (res && res.success) {
+          showToast(`Switched game to ${e.target.value.toUpperCase()}!`);
+        }
+      });
+    }
+  });
+}
+
+// Bluff Action Buttons
+const btnCallBluff = document.getElementById('btn-call-bluff');
+const btnPlayBluffCards = document.getElementById('btn-play-bluff-cards');
+const bluffSelectedCount = document.getElementById('bluff-selected-count');
+const bluffActionBar = document.getElementById('bluff-action-bar');
+
+if (btnCallBluff) {
+  btnCallBluff.addEventListener('click', () => {
+    if (!currentRoomId) return;
+    socket.emit('call_bluff', { roomId: currentRoomId }, (res) => {
+      if (res && !res.success) {
+        showToast(res.error, 'error');
+      }
+    });
+  });
+}
+
+if (btnPlayBluffCards) {
+  btnPlayBluffCards.addEventListener('click', () => {
+    if (!currentRoomId) return;
+    if (selectedBluffCardIds.size === 0) {
+      return showToast('Tap cards in your hand to select 1 to 4 cards to place!', 'error');
+    }
+    const cardIds = Array.from(selectedBluffCardIds);
+    socket.emit('bluff_play_cards', { roomId: currentRoomId, cardIds }, (res) => {
+      if (res && res.success) {
+        selectedBluffCardIds.clear();
+        if (bluffSelectedCount) bluffSelectedCount.innerText = '0';
+      } else {
+        showToast(res ? res.error : 'Failed to play cards', 'error');
+      }
+    });
+  });
+}
+
+// Rang Trump Selection Modal & Buttons
+const rangTrumpModal = document.getElementById('rang-trump-modal');
+document.querySelectorAll('.btn-select-trump').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const suit = btn.dataset.suit;
+    if (suit && currentRoomId) {
+      socket.emit('select_trump', { roomId: currentRoomId, suit }, (res) => {
+        if (res && res.success) {
+          if (rangTrumpModal) rangTrumpModal.classList.add('hidden');
+          showToast(`👑 RANG is set to ${suit}!`);
+        }
+      });
+    }
+  });
+});
+
 // Reaction Buttons
 document.querySelectorAll('.reaction-btn').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -376,6 +518,12 @@ function setupLobbyView(state) {
   navRoomCode.innerText = state.roomId;
   lobbyRoomCode.innerText = state.roomId;
   lobbyShareLink.innerText = getShareableLink(state.roomId);
+
+  const gameModeSelect = document.getElementById('lobby-game-mode-select');
+  if (gameModeSelect && state.gameType) {
+    gameModeSelect.value = state.gameType;
+    gameModeSelect.disabled = !isHost;
+  }
 
   const max = state.options.maxPlayers || 4;
   lobbyPlayerCountBadge.innerText = `${state.players.length} / ${max} Players`;
@@ -432,15 +580,46 @@ function renderGameBoard(state) {
   currentGameState = state;
   navRoomCode.innerText = state.roomId;
 
-  // 1. Update Top Bar Status
-  if (state.ledSuit) {
-    const suitColors = { '♠': 'text-slate-100', '♣': 'text-slate-100', '♥': 'text-red-500', '♦': 'text-red-500' };
-    ledSuitBadge.innerHTML = `<span class="${suitColors[state.ledSuit] || ''} text-base">${state.ledSuit}</span>`;
-  } else {
-    ledSuitBadge.innerHTML = '<span class="text-slate-400">Any</span>';
-  }
+  // 1. Update Top Bar Status according to Game Type
+  if (state.gameType === 'bluff') {
+    ledSuitBadge.innerHTML = `<span class="text-amber-400 font-extrabold text-xs">Claim: ${state.currentRank || 'A'}s</span>`;
+    discardCountBadge.innerText = state.centerPileCount || 0;
+    if (bluffActionBar) bluffActionBar.classList.remove('hidden');
 
-  discardCountBadge.innerText = state.discardPileCount || 0;
+    if (btnCallBluff) {
+      if (state.lastPlay && state.lastPlay.playerId !== myPlayerId) {
+        btnCallBluff.disabled = false;
+        btnCallBluff.classList.remove('opacity-40');
+        btnCallBluff.innerText = `🚨 CALL BLUFF! (${state.lastPlay.playerName} claimed ${state.lastPlay.count} ${state.lastPlay.declaredRank}s)`;
+      } else {
+        btnCallBluff.disabled = true;
+        btnCallBluff.classList.add('opacity-40');
+        btnCallBluff.innerText = `🚨 CALL BLUFF! (Jhooth!)`;
+      }
+    }
+  } else if (state.gameType === 'rang') {
+    if (bluffActionBar) bluffActionBar.classList.add('hidden');
+    ledSuitBadge.innerHTML = `<span class="text-amber-400 font-extrabold text-xs">Rang: ${state.trumpSuit || 'Choosing...'}</span>`;
+    discardCountBadge.innerText = state.trick ? state.trick.length : 0;
+
+    if (state.status === 'trump_selection') {
+      if (state.trumpCallerId === myPlayerId) {
+        if (rangTrumpModal) rangTrumpModal.classList.remove('hidden');
+      }
+    } else {
+      if (rangTrumpModal) rangTrumpModal.classList.add('hidden');
+    }
+  } else {
+    // Thulla Mode
+    if (bluffActionBar) bluffActionBar.classList.add('hidden');
+    if (state.ledSuit) {
+      const suitColors = { '♠': 'text-slate-100', '♣': 'text-slate-100', '♥': 'text-red-500', '♦': 'text-red-500' };
+      ledSuitBadge.innerHTML = `<span class="${suitColors[state.ledSuit] || ''} text-base">${state.ledSuit}</span>`;
+    } else {
+      ledSuitBadge.innerHTML = '<span class="text-slate-400">Any</span>';
+    }
+    discardCountBadge.innerText = state.discardPileCount || 0;
+  }
 
   // Turn status
   const currentTurnPlayer = state.players.find(p => p.id === state.currentTurnPlayerId);
@@ -448,8 +627,13 @@ function renderGameBoard(state) {
 
   if (isMyTurn) {
     turnNoticeBanner.className = 'px-4 py-1.5 rounded-full bg-amber-500 text-black text-xs font-black shadow-lg shadow-amber-500/30 animate-pulse';
-    turnNoticeBanner.innerText = state.isFirstTrick && state.trick.length === 0 ? '♠ Leading with Ace of Spades (Your Turn!)' : '👉 It is YOUR turn to play!';
-    handTurnHint.innerText = 'Tap any glowing card below to play it!';
+    if (state.gameType === 'bluff') {
+      turnNoticeBanner.innerText = `👉 YOUR TURN: Select 1-4 cards claiming ${state.currentRank}s`;
+      handTurnHint.innerText = 'Tap cards to select, then click "Place Cards"';
+    } else {
+      turnNoticeBanner.innerText = state.isFirstTrick && state.trick && state.trick.length === 0 ? '♠ Leading with Ace of Spades (Your Turn!)' : '👉 It is YOUR turn to play!';
+      handTurnHint.innerText = 'Tap any glowing card below to play it!';
+    }
     window.soundFx.playTurnChime();
   } else if (currentTurnPlayer) {
     turnNoticeBanner.className = 'px-4 py-1.5 rounded-full bg-slate-800/90 border border-slate-700 text-xs font-bold text-slate-300';
@@ -582,10 +766,37 @@ function renderTrick(trick, highlightCardId = null, highlightClass = '') {
 function renderUserHand(hand, validCards, isMyTurn) {
   userCardsContainer.innerHTML = '';
 
+  // 1. BLUFF MODE: multi-card selection
+  if (currentGameState && currentGameState.gameType === 'bluff') {
+    hand.forEach((card) => {
+      const isSelected = selectedBluffCardIds.has(card.id);
+      const cardEl = createCardElement(card);
+      cardEl.classList.add('hand-card', 'valid-card');
+      if (isSelected) {
+        cardEl.classList.add('selected-bluff-card');
+      }
+      cardEl.addEventListener('click', () => {
+        if (selectedBluffCardIds.has(card.id)) {
+          selectedBluffCardIds.delete(card.id);
+        } else {
+          if (selectedBluffCardIds.size >= 4) {
+            return showToast('Maximum 4 cards can be played at once in Bluff', 'error');
+          }
+          selectedBluffCardIds.add(card.id);
+        }
+        if (bluffSelectedCount) bluffSelectedCount.innerText = selectedBluffCardIds.size;
+        renderUserHand(hand, validCards, isMyTurn);
+      });
+      userCardsContainer.appendChild(cardEl);
+    });
+    return;
+  }
+
+  // 2. THULLA & RANG MODES: single card play
   const validCardIds = new Set((validCards || []).map(c => c.id));
 
   hand.forEach((card, idx) => {
-    const isValid = isMyTurn && validCardIds.has(card.id);
+    const isValid = isMyTurn && (validCardIds.size === 0 || validCardIds.has(card.id));
     const cardEl = createCardElement(card);
     cardEl.classList.add('hand-card');
 
@@ -800,6 +1011,19 @@ socket.on('chat_received', (data) => {
   chatMessages.appendChild(msg);
   chatMessages.scrollTop = chatMessages.scrollHeight;
 
+  // Also add to Lobby Live Chat
+  const lobbyChat = document.getElementById('lobby-chat-messages');
+  if (lobbyChat) {
+    const lmsg = document.createElement('div');
+    lmsg.className = 'text-[11px] text-slate-300';
+    lmsg.innerHTML = `<span class="font-bold text-amber-400">${data.senderName}:</span> ${data.text}`;
+    lobbyChat.appendChild(lmsg);
+    lobbyChat.scrollTop = lobbyChat.scrollHeight;
+  }
+
+  // Floating speech bubble over seat
+  showChatBubble(data.senderId, data.text);
+
   if (chatDrawer.classList.contains('hidden')) {
     chatBadge.classList.remove('hidden');
     window.soundFx.playPop();
@@ -825,5 +1049,12 @@ socket.on('bot_thinking', (data) => {
 // Initialize on Load
 window.addEventListener('DOMContentLoaded', () => {
   setupAvatarPickers();
-  parseURLParams();
+  // Restore saved player name if any
+  const savedName = localStorage.getItem('thulla_player_name');
+  if (savedName) {
+    if (createPlayerName) createPlayerName.value = savedName;
+    if (joinPlayerName) joinPlayerName.value = savedName;
+  }
+  // If user opened a shareable room link, join table DIRECTLY!
+  parseURLParamsAndDirectJoin();
 });

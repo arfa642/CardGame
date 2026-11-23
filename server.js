@@ -10,6 +10,15 @@ const { Server } = require('socket.io');
 
 const ThullaGame = require('./game/engine');
 const ThullaBot = require('./game/bot');
+const BluffGame = require('./game/bluff_engine');
+const RangGame = require('./game/rang_engine');
+
+function createGameInstance(roomId, options = {}) {
+  const type = options.gameType || 'thulla';
+  if (type === 'bluff') return new BluffGame(roomId, options);
+  if (type === 'rang') return new RangGame(roomId, options);
+  return new ThullaGame(roomId, options);
+}
 
 const app = express();
 const server = http.createServer(app);
@@ -99,12 +108,76 @@ function triggerBotTurnIfNeeded(room, delayMs = null) {
 
   room.botTimer = setTimeout(() => {
     room.botTimer = null;
-    if (game.status !== 'in_progress') return;
+    if (game.status !== 'in_progress' && game.status !== 'trump_selection') return;
 
     const botPlayer = game.getCurrentPlayer();
     if (!botPlayer || !botPlayer.isBot) return;
 
     try {
+      // 1. RANG GAME (Court Piece)
+      if (game.gameType === 'rang') {
+        if (game.status === 'trump_selection') {
+          const trump = game.autoSelectBotTrump(botPlayer.hand);
+          game.selectTrump(botPlayer.id, trump);
+          broadcastGameState(room);
+          triggerBotTurnIfNeeded(room, 1600);
+          return;
+        }
+
+        const validCards = game.getValidCards(botPlayer.id);
+        const card = validCards[Math.floor(Math.random() * validCards.length)];
+        const result = game.playCard(botPlayer.id, card.id);
+        io.to(room.id).emit('action_performed', {
+          action: result,
+          actor: { id: botPlayer.id, name: botPlayer.name, avatar: botPlayer.avatar, isBot: true },
+          card
+        });
+        broadcastGameState(room);
+        triggerBotTurnIfNeeded(room, result.type === 'trick_cleared' ? 2000 : 1600);
+        return;
+      }
+
+      // 2. BLUFF GAME (Cheat)
+      if (game.gameType === 'bluff') {
+        const curRank = game.getCurrentRank();
+        const matchingCards = botPlayer.hand.filter(c => c.rank === curRank);
+        let cardsToPlay = [];
+
+        if (matchingCards.length > 0 && Math.random() < 0.75) {
+          // Play honestly
+          cardsToPlay = matchingCards.slice(0, Math.min(matchingCards.length, 3));
+        } else {
+          // Play bluff (pick 1 or 2 random cards)
+          const shuffled = [...botPlayer.hand].sort(() => 0.5 - Math.random());
+          cardsToPlay = shuffled.slice(0, Math.min(shuffled.length, Math.random() < 0.6 ? 1 : 2));
+        }
+
+        const cardIds = cardsToPlay.map(c => c.id);
+        const result = game.playCards(botPlayer.id, cardIds, curRank);
+        io.to(room.id).emit('action_performed', {
+          action: result,
+          actor: { id: botPlayer.id, name: botPlayer.name, avatar: botPlayer.avatar, isBot: true }
+        });
+        broadcastGameState(room);
+
+        // Schedule next turn (or bot challenge)
+        const nextPlayer = game.getCurrentPlayer();
+        if (nextPlayer && nextPlayer.isBot && Math.random() < 0.3) {
+          setTimeout(() => {
+            if (game.status === 'in_progress' && game.lastPlay) {
+              const chResult = game.callBluff(nextPlayer.id);
+              io.to(room.id).emit('action_performed', { action: chResult });
+              broadcastGameState(room);
+              triggerBotTurnIfNeeded(room, 2400);
+            }
+          }, 1800);
+        } else {
+          triggerBotTurnIfNeeded(room, 1600);
+        }
+        return;
+      }
+
+      // 3. THULLA GAME (Default)
       const card = ThullaBot.chooseCard(game, botPlayer.id);
       if (!card) {
         console.error(`Bot ${botPlayer.name} could not pick a card`);
@@ -113,7 +186,6 @@ function triggerBotTurnIfNeeded(room, delayMs = null) {
 
       const result = game.playCard(botPlayer.id, card.id);
 
-      // Broadcast card play / Thulla event
       io.to(room.id).emit('action_performed', {
         action: result,
         actor: { id: botPlayer.id, name: botPlayer.name, avatar: botPlayer.avatar, isBot: true },
@@ -122,7 +194,6 @@ function triggerBotTurnIfNeeded(room, delayMs = null) {
 
       broadcastGameState(room);
 
-      // Check if next turn is also a bot: if Thulla or trick cleared, give a generous pause so players can see it!
       let nextDelay = null;
       if (result.isThulla) {
         nextDelay = 2600;
@@ -147,7 +218,7 @@ io.on('connection', (socket) => {
       const roomId = generateRoomCode();
       const playerId = 'user_' + socket.id.slice(0, 8);
 
-      const game = new ThullaGame(roomId, options || {});
+      const game = createGameInstance(roomId, options || {});
       const hostPlayer = game.addPlayer(playerId, hostName || 'Host', false, avatar);
 
       const room = {
@@ -388,6 +459,82 @@ io.on('connection', (socket) => {
 
       broadcastGameState(room);
       if (callback) callback({ success: true, count: targetBots });
+    } catch (err) {
+      if (callback) callback({ success: false, error: err.message });
+    }
+  });
+
+  // Change Game Type in Lobby (Host only: Thulla, Bluff, Rang)
+  socket.on('change_game_type', ({ roomId, gameType }, callback) => {
+    const room = rooms.get(roomId);
+    if (!room) return callback && callback({ success: false, error: 'Room not found' });
+    if (room.hostId !== currentPlayerId) {
+      return callback && callback({ success: false, error: 'Only host can change game type' });
+    }
+    if (room.game.status !== 'waiting') {
+      return callback && callback({ success: false, error: 'Cannot change while match in progress' });
+    }
+
+    try {
+      const existingPlayers = [...room.game.players];
+      room.game = createGameInstance(roomId, { ...room.game.options, gameType });
+      existingPlayers.forEach(p => {
+        room.game.addPlayer(p.id, p.name, p.isBot, p.avatar);
+      });
+
+      broadcastGameState(room);
+      io.to(roomId).emit('player_announcement', {
+        type: 'game_type_changed',
+        text: `Game mode switched to ${gameType.toUpperCase()}!`
+      });
+      if (callback) callback({ success: true, gameType });
+    } catch (err) {
+      if (callback) callback({ success: false, error: err.message });
+    }
+  });
+
+  // Bluff: Call Bluff
+  socket.on('call_bluff', ({ roomId }, callback) => {
+    const room = rooms.get(roomId);
+    if (!room) return;
+    try {
+      const result = room.game.callBluff(currentPlayerId);
+      io.to(roomId).emit('action_performed', { action: result });
+      broadcastGameState(room);
+      triggerBotTurnIfNeeded(room, 2400);
+      if (callback) callback({ success: true, result });
+    } catch (err) {
+      if (callback) callback({ success: false, error: err.message });
+    }
+  });
+
+  // Bluff: Play Cards
+  socket.on('bluff_play_cards', ({ roomId, cardIds, declaredRank }, callback) => {
+    const room = rooms.get(roomId);
+    if (!room) return;
+    try {
+      const result = room.game.playCards(currentPlayerId, cardIds, declaredRank);
+      io.to(roomId).emit('action_performed', {
+        action: result,
+        actor: { id: currentPlayerId, name: room.game.getCurrentPlayer().name, isBot: false }
+      });
+      broadcastGameState(room);
+      triggerBotTurnIfNeeded(room, 1600);
+      if (callback) callback({ success: true, result });
+    } catch (err) {
+      if (callback) callback({ success: false, error: err.message });
+    }
+  });
+
+  // Rang: Select Trump Suit
+  socket.on('select_trump', ({ roomId, suit }, callback) => {
+    const room = rooms.get(roomId);
+    if (!room) return;
+    try {
+      room.game.selectTrump(currentPlayerId, suit);
+      broadcastGameState(room);
+      triggerBotTurnIfNeeded(room, 1600);
+      if (callback) callback({ success: true, suit });
     } catch (err) {
       if (callback) callback({ success: false, error: err.message });
     }
