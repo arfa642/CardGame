@@ -75,7 +75,7 @@ function broadcastGameState(room, extraData = {}) {
 }
 
 // Bot turn scheduler
-function triggerBotTurnIfNeeded(room) {
+function triggerBotTurnIfNeeded(room, delayMs = null) {
   const { game } = room;
   if (game.status !== 'in_progress') return;
 
@@ -88,7 +88,8 @@ function triggerBotTurnIfNeeded(room) {
     room.botTimer = null;
   }
 
-  const botSpeed = game.options.botSpeed || 900;
+  const defaultBotSpeed = game.options.botSpeed || 1600;
+  const executionDelay = delayMs !== null ? delayMs : defaultBotSpeed;
 
   // Notify players that bot is thinking
   io.to(room.id).emit('bot_thinking', {
@@ -121,12 +122,18 @@ function triggerBotTurnIfNeeded(room) {
 
       broadcastGameState(room);
 
-      // Check if next turn is also a bot
-      triggerBotTurnIfNeeded(room);
+      // Check if next turn is also a bot: if Thulla or trick cleared, give a generous pause so players can see it!
+      let nextDelay = null;
+      if (result.isThulla) {
+        nextDelay = 2600;
+      } else if (result.type === 'trick_cleared') {
+        nextDelay = 1900;
+      }
+      triggerBotTurnIfNeeded(room, nextDelay);
     } catch (err) {
       console.error(`Error in bot turn for room ${room.id}:`, err);
     }
-  }, botSpeed);
+  }, executionDelay);
 }
 
 // Socket.io Connection Handler
@@ -343,8 +350,44 @@ io.on('connection', (socket) => {
       broadcastGameState(room);
       if (callback) callback({ success: true, result });
 
-      // Trigger bot if next turn is a bot
-      triggerBotTurnIfNeeded(room);
+      // Trigger bot if next turn is a bot (with pause after Thulla or trick clear)
+      let nextDelay = null;
+      if (result.isThulla) {
+        nextDelay = 2600;
+      } else if (result.type === 'trick_cleared') {
+        nextDelay = 1900;
+      }
+      triggerBotTurnIfNeeded(room, nextDelay);
+    } catch (err) {
+      if (callback) callback({ success: false, error: err.message });
+    }
+  });
+
+  // Set exact bot count (e.g. 2 to 6 bots)
+  socket.on('set_bots_count', ({ roomId, count }, callback) => {
+    const room = rooms.get(roomId);
+    if (!room) return callback && callback({ success: false, error: 'Room not found' });
+    if (room.hostId !== currentPlayerId) {
+      return callback && callback({ success: false, error: 'Only host can configure bots' });
+    }
+
+    try {
+      const targetBots = Math.max(1, Math.min(8, parseInt(count) || 3));
+      // Remove all current bots
+      room.game.players = room.game.players.filter(p => !p.isBot);
+
+      const botAvatars = ['🤖', '🦾', '👾', '🚀', '🧠', '🧙', '🥷', '🦊', '🐯'];
+      const botNames = ['Bot Max', 'Bot Zara', 'Bot Leo', 'Bot Maya', 'Bot Rex', 'Bot Luna', 'Bot Sam', 'Bot Kai'];
+
+      for (let i = 0; i < targetBots; i++) {
+        const botId = 'bot_' + Math.random().toString(36).substring(2, 9);
+        const name = botNames[i % botNames.length];
+        const avatar = botAvatars[i % botAvatars.length];
+        room.game.addPlayer(botId, name, true, avatar);
+      }
+
+      broadcastGameState(room);
+      if (callback) callback({ success: true, count: targetBots });
     } catch (err) {
       if (callback) callback({ success: false, error: err.message });
     }

@@ -277,6 +277,25 @@ body {
   transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
+.trick-card-wrapper.thulla-hit .playing-card {
+  box-shadow: 0 0 30px rgba(239, 68, 68, 0.9), 0 8px 25px rgba(0, 0, 0, 0.7);
+  border: 3px solid #ef4444;
+  transform: scale(1.08) !important;
+  animation: thullaCardShake 0.5s ease-in-out;
+}
+
+.trick-card-wrapper.trick-winner .playing-card {
+  box-shadow: 0 0 25px rgba(251, 191, 36, 0.9), 0 8px 25px rgba(0, 0, 0, 0.7);
+  border: 3px solid #fbbf24;
+  transform: scale(1.06) !important;
+}
+
+@keyframes thullaCardShake {
+  0%, 100% { transform: scale(1.08) rotate(0deg); }
+  25% { transform: scale(1.14) rotate(-8deg); }
+  75% { transform: scale(1.14) rotate(8deg); }
+}
+
 /* THULLA Alert Banner */
 .thulla-banner {
   position: absolute;

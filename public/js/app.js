@@ -12,6 +12,8 @@ let currentRoomId = null;
 let isHost = false;
 let currentGameState = null;
 let selectedAvatar = '🦊';
+let isTrickFrozen = false;
+let trickFreezeTimer = null;
 
 // Avatars list
 const AVATARS = ['🦊', '🐼', '🦁', '🐯', '🤖', '🦄', '🐸', '🧙', '🥷', '🚀'];
@@ -229,22 +231,25 @@ joinRoomBtn.addEventListener('click', () => {
   });
 });
 
-// Quick Play vs 3 AI Bots
+// Quick Play vs 2 to 6 AI Bots
 quickPlayBtn.addEventListener('click', () => {
   const name = createPlayerName.value.trim() || 'You';
+  const botSelect = document.getElementById('quick-bot-count');
+  const botCount = botSelect ? (parseInt(botSelect.value) || 3) : 3;
+  const totalPlayers = botCount + 1;
 
   socket.emit('create_room', {
     hostName: name,
     avatar: selectedAvatar,
-    options: { maxPlayers: 4, deckCount: 'auto' }
+    options: { maxPlayers: totalPlayers, deckCount: 'auto', botSpeed: 1600 }
   }, (res) => {
     if (res.success) {
       myPlayerId = res.playerId;
       currentRoomId = res.roomId;
       isHost = true;
 
-      // Fill with 3 bots and auto-start
-      socket.emit('fill_bots', { roomId: res.roomId, count: 4 }, () => {
+      // Fill with selected number of bots and auto-start
+      socket.emit('fill_bots', { roomId: res.roomId, count: totalPlayers }, () => {
         socket.emit('start_game', { roomId: res.roomId });
       });
     } else {
@@ -256,6 +261,20 @@ quickPlayBtn.addEventListener('click', () => {
 // Slider Capacity Label
 createMaxPlayers.addEventListener('input', (e) => {
   playerCapacityLabel.innerText = `${e.target.value} Players`;
+});
+
+// Lobby Preset Bot Buttons (2 to 6 bots)
+document.addEventListener('click', (e) => {
+  if (e.target && e.target.classList.contains('btn-preset-bots')) {
+    const bots = parseInt(e.target.dataset.bots) || 3;
+    if (currentRoomId) {
+      socket.emit('set_bots_count', { roomId: currentRoomId, count: bots }, (res) => {
+        if (res && res.success) {
+          showToast(`Table set to ${bots} Bots (${bots + 1} players)`);
+        }
+      });
+    }
+  }
 });
 
 // Lobby Buttons
@@ -441,8 +460,10 @@ function renderGameBoard(state) {
   // 2. Render Opponent Seats around the Table
   renderSeats(state);
 
-  // 3. Render Center Trick Cards
-  renderTrick(state.trick);
+  // 3. Render Center Trick Cards (if not in a Thulla/Win pause)
+  if (!isTrickFrozen) {
+    renderTrick(state.trick);
+  }
 
   // 4. Render User Hand at Bottom
   const myPlayer = state.players.find(p => p.id === myPlayerId);
@@ -518,15 +539,20 @@ function renderSeats(state) {
 }
 
 // Render Center Trick Cards
-function renderTrick(trick) {
+function renderTrick(trick, highlightCardId = null, highlightClass = '') {
   trickTable.innerHTML = '';
   if (!trick || trick.length === 0) return;
 
   const count = trick.length;
   trick.forEach((item, idx) => {
-    const cardEl = createCardElement(item.card);
+    const cardData = item.card || item;
+    const cardEl = createCardElement(cardData);
     const wrapper = document.createElement('div');
     wrapper.className = 'trick-card-wrapper';
+
+    if (highlightCardId && cardData.id === highlightCardId) {
+      wrapper.classList.add(highlightClass);
+    }
 
     // Spread slightly with organic casino angle
     const angleStep = 24;
@@ -539,12 +565,15 @@ function renderTrick(trick) {
     wrapper.style.zIndex = idx + 1;
 
     // Player name label on top of card
-    const label = document.createElement('div');
-    label.className = 'absolute -bottom-4 left-1/2 -translate-x-1/2 bg-black/85 text-amber-300 text-[10px] font-bold px-2 py-0.5 rounded-full border border-amber-500/30 whitespace-nowrap shadow';
-    label.innerText = item.playerName;
+    const playerName = item.playerName || '';
+    if (playerName) {
+      const label = document.createElement('div');
+      label.className = 'absolute -bottom-4 left-1/2 -translate-x-1/2 bg-black/85 text-amber-300 text-[10px] font-bold px-2 py-0.5 rounded-full border border-amber-500/30 whitespace-nowrap shadow';
+      label.innerText = playerName;
+      wrapper.appendChild(label);
+    }
 
     wrapper.appendChild(cardEl);
-    wrapper.appendChild(label);
     trickTable.appendChild(wrapper);
   });
 }
@@ -698,10 +727,52 @@ socket.on('game_state_update', (data) => {
 
 socket.on('action_performed', (data) => {
   const action = data.action;
+
   if (action.isThulla) {
+    isTrickFrozen = true;
+    if (trickFreezeTimer) clearTimeout(trickFreezeTimer);
+
+    // Render the completed trick with the Thulla card highlighted in red
+    if (action.completedTrick) {
+      renderTrick(action.completedTrick, action.thullaCard ? action.thullaCard.id : null, 'thulla-hit');
+    }
+
+    turnNoticeBanner.className = 'px-4 py-1.5 rounded-full bg-red-600 text-white text-xs font-black shadow-lg shadow-red-600/40 animate-pulse';
+    turnNoticeBanner.innerText = `💥 THULLA! ${action.thullaBy} hit ${action.victimName} (+${action.cardsCount} cards)`;
+
     triggerThullaEffect(action);
+
+    // Keep cards visible on table for 2.4s so players see what happened!
+    trickFreezeTimer = setTimeout(() => {
+      isTrickFrozen = false;
+      trickFreezeTimer = null;
+      if (currentGameState) {
+        renderGameBoard(currentGameState);
+      }
+    }, 2400);
+
   } else if (action.type === 'trick_cleared') {
+    isTrickFrozen = true;
+    if (trickFreezeTimer) clearTimeout(trickFreezeTimer);
+
+    if (action.completedTrick) {
+      renderTrick(action.completedTrick, action.highestCard ? action.highestCard.id : null, 'trick-winner');
+    }
+
+    turnNoticeBanner.className = 'px-4 py-1.5 rounded-full bg-emerald-600 text-white text-xs font-bold shadow-md';
+    turnNoticeBanner.innerText = `✨ ${action.winnerName} won the trick with ${action.highestCard.rank}${action.highestCard.suit}!`;
+
     window.soundFx.playTrickWin();
+
+    // Keep cards visible on table for 1.8s so players see who won!
+    trickFreezeTimer = setTimeout(() => {
+      isTrickFrozen = false;
+      trickFreezeTimer = null;
+      if (currentGameState) {
+        renderGameBoard(currentGameState);
+      }
+    }, 1800);
+
   } else {
     window.soundFx.playCardSnap();
   }

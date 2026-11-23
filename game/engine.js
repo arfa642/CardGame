@@ -246,7 +246,8 @@ class ThullaGame {
         victimName: victim.name,
         victimId: victim.id,
         highestCard: highestLed.card,
-        cardsCount: penaltyCards.length
+        cardsCount: penaltyCards.length,
+        completedTrick: penaltyCards
       };
 
       this.lastEvent = {
@@ -309,7 +310,8 @@ class ThullaGame {
         winnerName: winnerPlayer.name,
         winnerId: winnerPlayer.id,
         highestCard: highestTrick.card,
-        cardsDiscarded: this.trick.length
+        cardsDiscarded: this.trick.length,
+        completedTrick: [...this.trick]
       };
 
       this.lastEvent = {
