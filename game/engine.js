@@ -258,16 +258,14 @@ class ThullaGame {
       this.checkPlayerSafe(currentPlayer);
 
       // Next lead:
-      // In Thulla rules: The player who gave the Thulla leads next trick!
-      // If the player who gave the Thulla just emptied their hand (now Safe),
-      // the lead goes to the victim, or next active player.
+      // In this rule variation: The player who picked up the cards (victim) leads the next trick!
       let nextLeadIndex;
-      if (!currentPlayer.isSafe) {
-        nextLeadIndex = this.players.indexOf(currentPlayer);
-      } else if (!victim.isSafe) {
+      if (!victim.isSafe) {
         nextLeadIndex = this.players.indexOf(victim);
+      } else if (!currentPlayer.isSafe) {
+        nextLeadIndex = this.players.indexOf(currentPlayer);
       } else {
-        nextLeadIndex = this.getNextActiveIndex(this.players.indexOf(currentPlayer));
+        nextLeadIndex = this.getNextActiveIndex(this.players.indexOf(victim));
       }
 
       // Clear the trick

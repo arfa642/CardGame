@@ -10,7 +10,7 @@ An authentic, modern, real-time web-based implementation of the traditional Sout
 - **♠️ Accurate Thulla Rules Engine:**
   - Game begins with the player holding the **Ace of Spades (♠A)** leading the first trick.
   - Mandatory suit-following logic: legal cards are highlighted with a gold glow, while invalid cards are locked.
-  - **The THULLA Penalty:** If a player has no cards of the led suit, they can hit with any card of another suit! The player who threw the highest card of the led suit must pick up all cards from the trick into their hand.
+  - **The THULLA Penalty:** If a player has no cards of the led suit, they can hit with any card of another suit! The player who threw the highest card of the led suit must pick up all cards from the trick into their hand, and that player who picked up the cards starts the next round.
   - **Trick Clearing:** When all active players follow suit without a Thulla, cards are permanently cleared to the dead pile, and the trick winner leads next.
   - **Winning & Podium:** Players who shed all cards become **Safe** with official rankings (1st, 2nd, 3rd place). The last player remaining with cards is the **Thulla (Bhabhi)**!
 - **🔊 Synthesized Web Audio API:** 100% self-contained audio effects (card snap, Thulla impact explosion, victory fanfare, turn chime, pop) without relying on external media files.
@@ -50,5 +50,5 @@ http://localhost:3000
    - If you do NOT hold any card of the led suit, you can throw ANY card from your hand.
    - This hit is called a **THULLA**!
    - The player who played the highest card of the original led suit in this trick must pick up all cards on the table and add them to their hand.
-   - The player who gave the Thulla gets the next lead.
+   - The player who picked up the penalty cards gets the next lead to start the round.
 5. **Safe Players:** Once you play your last card, you are Safe and exit the round. The game continues until only 1 player remains.
