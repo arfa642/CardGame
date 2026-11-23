@@ -176,18 +176,45 @@ function getShareableLink(roomId) {
   return `${window.location.origin}/?room=${roomId}`;
 }
 
-// Copy to clipboard
-function copyInviteLink(roomId) {
-  const link = getShareableLink(roomId);
-  if (navigator.clipboard) {
-    navigator.clipboard.writeText(link).then(() => {
-      showToast('📋 Invite link copied to clipboard!');
+// Copy to clipboard with universal mobile fallback
+function copyToClipboard(text, successMsg = 'Copied to clipboard!') {
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text).then(() => {
+      showToast(successMsg);
     }).catch(() => {
-      prompt('Copy this link:', link);
+      fallbackCopyText(text, successMsg);
     });
   } else {
-    prompt('Copy this link:', link);
+    fallbackCopyText(text, successMsg);
   }
+}
+
+function fallbackCopyText(text, successMsg) {
+  try {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-999999px';
+    textArea.style.top = '-999999px';
+    textArea.setAttribute('readonly', '');
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    const successful = document.execCommand('copy');
+    document.body.removeChild(textArea);
+    if (successful) {
+      showToast(successMsg);
+    } else {
+      prompt('Copy this link:', text);
+    }
+  } catch (err) {
+    prompt('Copy this link:', text);
+  }
+}
+
+function copyInviteLink(roomId) {
+  const link = getShareableLink(roomId);
+  copyToClipboard(link, '📋 Invite link copied to clipboard!');
 }
 
 // View Switching
@@ -211,95 +238,103 @@ function switchScreen(screen) {
 // --- EVENT HANDLERS ---
 
 // Create Room
-createRoomBtn.addEventListener('click', () => {
-  const name = createPlayerName.value.trim() || 'Player 1';
-  const maxPlayers = parseInt(createMaxPlayers.value) || 4;
-  const deckMode = createDeckMode.value;
-  const gameTypeSelect = document.getElementById('create-game-type');
-  const gameType = gameTypeSelect ? gameTypeSelect.value : 'thulla';
+if (createRoomBtn) {
+  createRoomBtn.addEventListener('click', () => {
+    const name = createPlayerName ? createPlayerName.value.trim() || 'Player 1' : 'Player 1';
+    const maxPlayers = createMaxPlayers ? parseInt(createMaxPlayers.value) || 4 : 4;
+    const deckMode = createDeckMode ? createDeckMode.value : 'auto';
+    const gameTypeSelect = document.getElementById('create-game-type');
+    const gameType = gameTypeSelect ? gameTypeSelect.value : 'thulla';
 
-  localStorage.setItem('thulla_player_name', name);
-  localStorage.setItem('thulla_player_avatar', selectedAvatar);
+    localStorage.setItem('thulla_player_name', name);
+    localStorage.setItem('thulla_player_avatar', selectedAvatar);
 
-  socket.emit('create_room', {
-    hostName: name,
-    avatar: selectedAvatar,
-    options: { maxPlayers, deckCount: deckMode, gameType }
-  }, (res) => {
-    if (res.success) {
-      myPlayerId = res.playerId;
-      currentRoomId = res.roomId;
-      isHost = true;
-      setupLobbyView(res.gameState);
-      switchScreen('lobby');
-      showToast(`🎉 Room created! Code: ${res.roomId}`);
-    } else {
-      showToast(res.error, 'error');
-    }
+    socket.emit('create_room', {
+      hostName: name,
+      avatar: selectedAvatar,
+      options: { maxPlayers, deckCount: deckMode, gameType }
+    }, (res) => {
+      if (res.success) {
+        myPlayerId = res.playerId;
+        currentRoomId = res.roomId;
+        isHost = true;
+        setupLobbyView(res.gameState);
+        switchScreen('lobby');
+        showToast(`🎉 Room created! Code: ${res.roomId}`);
+      } else {
+        showToast(res.error, 'error');
+      }
+    });
   });
-});
+}
 
 // Join Room
-joinRoomBtn.addEventListener('click', () => {
-  const code = joinRoomCode.value.trim().toUpperCase();
-  const name = joinPlayerName.value.trim() || 'Player';
+if (joinRoomBtn) {
+  joinRoomBtn.addEventListener('click', () => {
+    const code = joinRoomCode ? joinRoomCode.value.trim().toUpperCase() : '';
+    const name = joinPlayerName ? joinPlayerName.value.trim() || 'Player' : 'Player';
 
-  if (!code) {
-    return showToast('Please enter a 6-character room code', 'error');
-  }
-
-  localStorage.setItem('thulla_player_name', name);
-  localStorage.setItem('thulla_player_avatar', selectedAvatar);
-
-  socket.emit('join_room', {
-    roomId: code,
-    playerName: name,
-    avatar: selectedAvatar
-  }, (res) => {
-    if (res.success) {
-      myPlayerId = res.playerId;
-      currentRoomId = res.roomId;
-      isHost = res.isHost;
-      setupLobbyView(res.gameState);
-      switchScreen('lobby');
-      showToast(`Joined table ${res.roomId}!`);
-    } else {
-      showToast(res.error, 'error');
+    if (!code) {
+      return showToast('Please enter a 6-character room code', 'error');
     }
+
+    localStorage.setItem('thulla_player_name', name);
+    localStorage.setItem('thulla_player_avatar', selectedAvatar);
+
+    socket.emit('join_room', {
+      roomId: code,
+      playerName: name,
+      avatar: selectedAvatar
+    }, (res) => {
+      if (res.success) {
+        myPlayerId = res.playerId;
+        currentRoomId = res.roomId;
+        isHost = res.isHost;
+        setupLobbyView(res.gameState);
+        switchScreen('lobby');
+        showToast(`Joined table ${res.roomId}!`);
+      } else {
+        showToast(res.error, 'error');
+      }
+    });
   });
-});
+}
 
 // Quick Play vs 2 to 6 AI Bots
-quickPlayBtn.addEventListener('click', () => {
-  const name = createPlayerName.value.trim() || 'You';
-  const botSelect = document.getElementById('quick-bot-count');
-  const botCount = botSelect ? (parseInt(botSelect.value) || 3) : 3;
-  const totalPlayers = botCount + 1;
+if (quickPlayBtn) {
+  quickPlayBtn.addEventListener('click', () => {
+    const name = createPlayerName ? createPlayerName.value.trim() || 'You' : 'You';
+    const botSelect = document.getElementById('quick-bot-count');
+    const botCount = botSelect ? (parseInt(botSelect.value) || 3) : 3;
+    const totalPlayers = botCount + 1;
 
-  socket.emit('create_room', {
-    hostName: name,
-    avatar: selectedAvatar,
-    options: { maxPlayers: totalPlayers, deckCount: 'auto', botSpeed: 1600 }
-  }, (res) => {
-    if (res.success) {
-      myPlayerId = res.playerId;
-      currentRoomId = res.roomId;
-      isHost = true;
+    socket.emit('create_room', {
+      hostName: name,
+      avatar: selectedAvatar,
+      options: { maxPlayers: totalPlayers, deckCount: 'auto', botSpeed: 1600 }
+    }, (res) => {
+      if (res.success) {
+        myPlayerId = res.playerId;
+        currentRoomId = res.roomId;
+        isHost = true;
 
-      // Fill with selected number of bots and auto-start
-      socket.emit('fill_bots', { roomId: res.roomId, count: totalPlayers }, () => {
-        socket.emit('start_game', { roomId: res.roomId });
-      });
-    } else {
-      showToast(res.error, 'error');
-    }
+        // Fill with selected number of bots and auto-start
+        socket.emit('fill_bots', { roomId: res.roomId, count: totalPlayers }, () => {
+          socket.emit('start_game', { roomId: res.roomId });
+        });
+      } else {
+        showToast(res.error, 'error');
+      }
+    });
   });
-});
+}
 
 // Slider Capacity Label
-createMaxPlayers.addEventListener('input', (e) => {
-  playerCapacityLabel.innerText = `${e.target.value} Players`;
-});
+if (createMaxPlayers) {
+  createMaxPlayers.addEventListener('input', (e) => {
+    if (playerCapacityLabel) playerCapacityLabel.innerText = `${e.target.value} Players`;
+  });
+}
 
 // Lobby Preset Bot Buttons (2 to 6 bots)
 document.addEventListener('click', (e) => {
@@ -316,72 +351,93 @@ document.addEventListener('click', (e) => {
 });
 
 // Lobby Buttons
-btnAddBot.addEventListener('click', () => {
-  if (currentRoomId) socket.emit('add_bot', { roomId: currentRoomId });
-});
-
-btnRemoveBot.addEventListener('click', () => {
-  if (currentRoomId) socket.emit('remove_bot', { roomId: currentRoomId });
-});
-
-btnFillBots.addEventListener('click', () => {
-  if (currentRoomId) socket.emit('fill_bots', { roomId: currentRoomId, count: 4 });
-});
-
-btnStartGame.addEventListener('click', () => {
-  if (!currentRoomId) return;
-  btnStartGame.disabled = true;
-  socket.emit('start_game', { roomId: currentRoomId }, (res) => {
-    btnStartGame.disabled = false;
-    if (res && !res.success) {
-      showToast(res.error, 'error');
-    }
+if (btnAddBot) {
+  btnAddBot.addEventListener('click', () => {
+    if (currentRoomId) socket.emit('add_bot', { roomId: currentRoomId });
   });
-});
+}
+
+if (btnRemoveBot) {
+  btnRemoveBot.addEventListener('click', () => {
+    if (currentRoomId) socket.emit('remove_bot', { roomId: currentRoomId });
+  });
+}
+
+if (btnFillBots) {
+  btnFillBots.addEventListener('click', () => {
+    if (currentRoomId) socket.emit('fill_bots', { roomId: currentRoomId, count: 4 });
+  });
+}
+
+if (btnStartGame) {
+  btnStartGame.addEventListener('click', () => {
+    if (!currentRoomId) return;
+    btnStartGame.disabled = true;
+    socket.emit('start_game', { roomId: currentRoomId }, (res) => {
+      btnStartGame.disabled = false;
+      if (res && !res.success) {
+        showToast(res.error, 'error');
+      }
+    });
+  });
+}
 
 // Copy Invite Links
-lobbyCopyCodeBtn.addEventListener('click', () => {
-  if (navigator.clipboard) {
-    navigator.clipboard.writeText(currentRoomId);
-    showToast('Room code copied!');
-  }
-});
+if (lobbyCopyCodeBtn) {
+  lobbyCopyCodeBtn.addEventListener('click', () => {
+    if (currentRoomId) copyToClipboard(currentRoomId, '📋 Room code copied!');
+  });
+}
 
-lobbyCopyLinkBtn.addEventListener('click', () => {
-  if (currentRoomId) copyInviteLink(currentRoomId);
-});
+if (lobbyCopyLinkBtn) {
+  lobbyCopyLinkBtn.addEventListener('click', () => {
+    if (currentRoomId) copyInviteLink(currentRoomId);
+  });
+}
 
-navCopyLinkBtn.addEventListener('click', () => {
-  if (currentRoomId) copyInviteLink(currentRoomId);
-});
+if (navCopyLinkBtn) {
+  navCopyLinkBtn.addEventListener('click', () => {
+    if (currentRoomId) copyInviteLink(currentRoomId);
+  });
+}
 
 // Sound Toggle
-soundToggleBtn.addEventListener('click', () => {
-  const muted = window.soundFx.toggleMute();
-  soundToggleBtn.innerText = muted ? '🔇' : '🔊';
-  showToast(muted ? 'Sound Muted' : 'Sound Unmuted');
-});
+if (soundToggleBtn) {
+  soundToggleBtn.addEventListener('click', () => {
+    const muted = window.soundFx.toggleMute();
+    soundToggleBtn.innerText = muted ? '🔇' : '🔊';
+    showToast(muted ? 'Sound Muted' : 'Sound Unmuted');
+  });
+}
 
 // Rules Modal
-rulesModalBtn.addEventListener('click', () => modalRules.classList.remove('hidden'));
-closeRulesBtn.addEventListener('click', () => modalRules.classList.add('hidden'));
-closeRulesBtnBottom.addEventListener('click', () => modalRules.classList.add('hidden'));
+if (rulesModalBtn) rulesModalBtn.addEventListener('click', () => modalRules && modalRules.classList.remove('hidden'));
+if (closeRulesBtn) closeRulesBtn.addEventListener('click', () => modalRules && modalRules.classList.add('hidden'));
+if (closeRulesBtnBottom) closeRulesBtnBottom.addEventListener('click', () => modalRules && modalRules.classList.add('hidden'));
 
 // Chat Toggle
-openChatBtn.addEventListener('click', () => {
-  chatDrawer.classList.toggle('hidden');
-  chatBadge.classList.add('hidden');
-});
-closeChatBtn.addEventListener('click', () => chatDrawer.classList.add('hidden'));
+if (openChatBtn) {
+  openChatBtn.addEventListener('click', () => {
+    if (chatDrawer) chatDrawer.classList.toggle('hidden');
+    if (chatBadge) chatBadge.classList.add('hidden');
+  });
+}
+if (closeChatBtn) {
+  closeChatBtn.addEventListener('click', () => {
+    if (chatDrawer) chatDrawer.classList.add('hidden');
+  });
+}
 
-chatForm.addEventListener('submit', (e) => {
-  e.preventDefault();
-  const text = chatInput.value.trim();
-  if (text && currentRoomId) {
-    socket.emit('send_chat', { roomId: currentRoomId, message: text });
-    chatInput.value = '';
-  }
-});
+if (chatForm) {
+  chatForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const text = chatInput ? chatInput.value.trim() : '';
+    if (text && currentRoomId) {
+      socket.emit('send_chat', { roomId: currentRoomId, message: text });
+      if (chatInput) chatInput.value = '';
+    }
+  });
+}
 
 // Quick Chat Chips
 document.addEventListener('click', (e) => {
@@ -499,26 +555,30 @@ document.querySelectorAll('.reaction-btn').forEach(btn => {
 });
 
 // Game Over Play Again
-btnPlayAgain.addEventListener('click', () => {
-  modalGameOver.classList.add('hidden');
-  if (isHost && currentRoomId) {
-    socket.emit('restart_game', { roomId: currentRoomId });
-  } else {
-    showToast('Waiting for host to restart...');
-  }
-});
+if (btnPlayAgain) {
+  btnPlayAgain.addEventListener('click', () => {
+    if (modalGameOver) modalGameOver.classList.add('hidden');
+    if (isHost && currentRoomId) {
+      socket.emit('restart_game', { roomId: currentRoomId });
+    } else {
+      showToast('Waiting for host to restart...');
+    }
+  });
+}
 
-btnBackLobby.addEventListener('click', () => {
-  modalGameOver.classList.add('hidden');
-  switchScreen('lobby');
-});
+if (btnBackLobby) {
+  btnBackLobby.addEventListener('click', () => {
+    if (modalGameOver) modalGameOver.classList.add('hidden');
+    switchScreen('lobby');
+  });
+}
 
 // --- UI RENDERING FUNCTIONS ---
 
 function setupLobbyView(state) {
-  navRoomCode.innerText = state.roomId;
-  lobbyRoomCode.innerText = state.roomId;
-  lobbyShareLink.innerText = getShareableLink(state.roomId);
+  if (navRoomCode) navRoomCode.innerText = state.roomId;
+  if (lobbyRoomCode) lobbyRoomCode.innerText = state.roomId;
+  if (lobbyShareLink) lobbyShareLink.innerText = getShareableLink(state.roomId);
 
   const gameModeSelect = document.getElementById('lobby-game-mode-select');
   if (gameModeSelect && state.gameType) {
@@ -526,53 +586,59 @@ function setupLobbyView(state) {
     gameModeSelect.disabled = !isHost;
   }
 
-  const max = state.options.maxPlayers || 4;
-  lobbyPlayerCountBadge.innerText = `${state.players.length} / ${max} Players`;
+  const max = (state.options && state.options.maxPlayers) || 4;
+  if (lobbyPlayerCountBadge) {
+    lobbyPlayerCountBadge.innerText = `${state.players.length} / ${max} Players`;
+  }
 
   // Host vs Guest controls
-  if (isHost) {
-    hostControls.classList.remove('hidden');
-    guestWaitingMsg.classList.add('hidden');
-  } else {
-    hostControls.classList.add('hidden');
-    guestWaitingMsg.classList.remove('hidden');
+  if (hostControls && guestWaitingMsg) {
+    if (isHost) {
+      hostControls.classList.remove('hidden');
+      guestWaitingMsg.classList.add('hidden');
+    } else {
+      hostControls.classList.add('hidden');
+      guestWaitingMsg.classList.remove('hidden');
+    }
   }
 
   // Render Seated Players
-  lobbyPlayersGrid.innerHTML = '';
-  state.players.forEach(p => {
-    const isMe = p.id === myPlayerId;
-    const card = document.createElement('div');
-    card.className = `p-3 rounded-xl border flex items-center gap-3 ${
-      isMe ? 'bg-amber-500/10 border-amber-500/50 shadow-md' : 'bg-slate-900/80 border-slate-800'
-    }`;
-    card.innerHTML = `
-      <div class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-xl flex-shrink-0">
-        ${p.avatar || '👤'}
-      </div>
-      <div class="truncate">
-        <div class="font-bold text-xs text-white truncate flex items-center gap-1.5">
-          ${p.name}
-          ${isMe ? '<span class="text-[9px] bg-amber-500 text-black px-1 rounded font-extrabold">YOU</span>' : ''}
-          ${p.isBot ? '<span class="text-[9px] bg-blue-600 text-white px-1 rounded font-bold">BOT</span>' : ''}
+  if (lobbyPlayersGrid) {
+    lobbyPlayersGrid.innerHTML = '';
+    state.players.forEach(p => {
+      const isMe = p.id === myPlayerId;
+      const card = document.createElement('div');
+      card.className = `p-3 rounded-xl border flex items-center gap-3 ${
+        isMe ? 'bg-amber-500/10 border-amber-500/50 shadow-md' : 'bg-slate-900/80 border-slate-800'
+      }`;
+      card.innerHTML = `
+        <div class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-xl flex-shrink-0">
+          ${p.avatar || '👤'}
         </div>
-        <div class="text-[10px] text-slate-400">Ready to play</div>
-      </div>
-    `;
-    lobbyPlayersGrid.appendChild(card);
-  });
+        <div class="truncate">
+          <div class="font-bold text-xs text-white truncate flex items-center gap-1.5">
+            ${p.name}
+            ${isMe ? '<span class="text-[9px] bg-amber-500 text-black px-1 rounded font-extrabold">YOU</span>' : ''}
+            ${p.isBot ? '<span class="text-[9px] bg-blue-600 text-white px-1 rounded font-bold">BOT</span>' : ''}
+          </div>
+          <div class="text-[10px] text-slate-400">Ready to play</div>
+        </div>
+      `;
+      lobbyPlayersGrid.appendChild(card);
+    });
 
-  // Fill empty slots with placeholders
-  for (let i = state.players.length; i < max; i++) {
-    const placeholder = document.createElement('div');
-    placeholder.className = 'p-3 rounded-xl border border-dashed border-slate-800 bg-slate-900/30 flex items-center gap-3 opacity-60';
-    placeholder.innerHTML = `
-      <div class="w-10 h-10 rounded-full border border-dashed border-slate-700 flex items-center justify-center text-slate-500 text-sm">
-        +
-      </div>
-      <div class="text-xs text-slate-500 font-medium">Empty Seat</div>
-    `;
-    lobbyPlayersGrid.appendChild(placeholder);
+    // Fill empty slots with placeholders
+    for (let i = state.players.length; i < max; i++) {
+      const placeholder = document.createElement('div');
+      placeholder.className = 'p-3 rounded-xl border border-dashed border-slate-800 bg-slate-900/30 flex items-center gap-3 opacity-60';
+      placeholder.innerHTML = `
+        <div class="w-10 h-10 rounded-full border border-dashed border-slate-700 flex items-center justify-center text-slate-500 text-sm">
+          +
+        </div>
+        <div class="text-xs text-slate-500 font-medium">Empty Seat</div>
+      `;
+      lobbyPlayersGrid.appendChild(placeholder);
+    }
   }
 }
 
