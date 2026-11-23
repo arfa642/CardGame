@@ -230,15 +230,20 @@ function switchScreen(screen) {
   screenLobby.classList.add('hidden');
   screenGame.classList.add('hidden');
 
+  const appTopHeader = document.getElementById('app-top-header');
+
   if (screen === 'landing') {
     screenLanding.classList.remove('hidden');
     navRoomPill.classList.add('hidden');
+    if (appTopHeader) appTopHeader.classList.remove('hidden');
   } else if (screen === 'lobby') {
     screenLobby.classList.remove('hidden');
     navRoomPill.classList.remove('hidden');
+    if (appTopHeader) appTopHeader.classList.remove('hidden');
   } else if (screen === 'game') {
     screenGame.classList.remove('hidden');
     navRoomPill.classList.remove('hidden');
+    if (appTopHeader) appTopHeader.classList.add('hidden');
   }
 }
 
@@ -605,6 +610,7 @@ if (btnCancelMatchmaking) btnCancelMatchmaking.addEventListener('click', () => c
 const btnOpenProfile = document.getElementById('btn-open-profile');
 const btnOpenSettings = document.getElementById('btn-open-settings');
 const btnAvatarClick = document.getElementById('btn-avatar-click');
+const btnNameClick = document.getElementById('btn-name-click');
 const modalProfileEdit = document.getElementById('modal-profile-edit');
 const btnSaveProfile = document.getElementById('btn-save-profile');
 const btnCloseProfile = document.getElementById('btn-close-profile');
@@ -617,6 +623,7 @@ const openProfileModal = () => {
 if (btnOpenProfile) btnOpenProfile.addEventListener('click', openProfileModal);
 if (btnOpenSettings) btnOpenSettings.addEventListener('click', openProfileModal);
 if (btnAvatarClick) btnAvatarClick.addEventListener('click', openProfileModal);
+if (btnNameClick) btnNameClick.addEventListener('click', openProfileModal);
 
 if (btnCloseProfile && modalProfileEdit) {
   btnCloseProfile.addEventListener('click', () => {
