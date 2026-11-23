@@ -611,6 +611,7 @@ const btnOpenProfile = document.getElementById('btn-open-profile');
 const btnOpenSettings = document.getElementById('btn-open-settings');
 const btnAvatarClick = document.getElementById('btn-avatar-click');
 const btnNameClick = document.getElementById('btn-name-click');
+const btnScoreCardClick = document.getElementById('btn-score-card-click');
 const modalProfileEdit = document.getElementById('modal-profile-edit');
 const btnSaveProfile = document.getElementById('btn-save-profile');
 const btnCloseProfile = document.getElementById('btn-close-profile');
@@ -624,6 +625,7 @@ if (btnOpenProfile) btnOpenProfile.addEventListener('click', openProfileModal);
 if (btnOpenSettings) btnOpenSettings.addEventListener('click', openProfileModal);
 if (btnAvatarClick) btnAvatarClick.addEventListener('click', openProfileModal);
 if (btnNameClick) btnNameClick.addEventListener('click', openProfileModal);
+if (btnScoreCardClick) btnScoreCardClick.addEventListener('click', openProfileModal);
 
 if (btnCloseProfile && modalProfileEdit) {
   btnCloseProfile.addEventListener('click', () => {
