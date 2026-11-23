@@ -25,6 +25,11 @@ const PORT = process.env.PORT || 3000;
 // Serve static assets from 'public' directory
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Lightweight keep-alive ping endpoint for cron jobs (prevents sleep)
+app.get('/ping', (req, res) => {
+  res.status(200).send('pong');
+});
+
 // Support direct room URL: /room/:roomId
 app.get('/room/:roomId', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
