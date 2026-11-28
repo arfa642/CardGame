@@ -95,6 +95,11 @@ function broadcastGameState(room, extraData = {}) {
       const socketId = room.sockets.get(player.id);
       if (socketId) {
         const playerState = game.getState(player.id);
+        if (room.isWorldwide) {
+          playerState.isWorldwide = true;
+          playerState.entryFee = room.entryFee || 500;
+          playerState.totalPot = room.totalPot || 2000;
+        }
         io.to(socketId).emit('game_state_update', {
           state: playerState,
           isHost: player.id === room.hostId,
@@ -672,7 +677,9 @@ io.on('connection', (socket) => {
           game,
           sockets: new Map(),
           botTimer: null,
-          isWorldwide: true
+          isWorldwide: true,
+          entryFee: 500,
+          totalPot: 2000
         };
 
         // Add all 4 players to game & room
@@ -688,13 +695,16 @@ io.on('connection', (socket) => {
 
         rooms.set(roomId, room);
 
-        // Notify matched players that match is found
+        // Notify matched players that match is found with buy-in and prize pool
         matched.forEach(p => {
           io.to(p.socketId).emit('match_found', {
             roomId,
             gameType: gType,
             playerId: p.playerId,
             isHost: p.playerId === room.hostId,
+            isWorldwide: true,
+            entryFee: 500,
+            totalPot: 2000,
             players: matched.map(m => ({ id: m.playerId, name: m.playerName, avatar: m.avatar }))
           });
         });

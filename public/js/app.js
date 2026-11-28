@@ -247,18 +247,36 @@ function switchScreen(screen) {
   }
 }
 
-// --- PROFILE & COIN HELPERS ---
+// --- REAL COIN SYSTEM (5,000 Default Bankroll) ---
+const COIN_STORAGE_KEY = 'thullaking_real_coins_v3';
+const WORLDWIDE_BOOT = 500;
+const WORLDWIDE_TOTAL_POT = 2000;
+let isWorldwideGame = false;
 
 function getUserCoins() {
-  return parseInt(localStorage.getItem('thulla_user_coins')) || 50000;
+  const saved = localStorage.getItem(COIN_STORAGE_KEY);
+  if (saved === null) {
+    localStorage.setItem(COIN_STORAGE_KEY, '5000');
+    return 5000;
+  }
+  return parseInt(saved, 10);
 }
 
 function addCoins(amount) {
   const current = getUserCoins();
-  const next = current + amount;
-  localStorage.setItem('thulla_user_coins', next);
+  const next = Math.max(0, current + amount);
+  localStorage.setItem(COIN_STORAGE_KEY, next.toString());
   updateCoinsDisplay();
   return next;
+}
+
+function deductCoins(amount) {
+  const current = getUserCoins();
+  if (current < amount) return false;
+  const next = current - amount;
+  localStorage.setItem(COIN_STORAGE_KEY, next.toString());
+  updateCoinsDisplay();
+  return true;
 }
 
 function updateCoinsDisplay() {
@@ -400,6 +418,12 @@ function startSoloBotGame(name, avatar, gameType, botCount) {
 let activeMatchmakingGame = null;
 
 function startMatchmaking(gameType) {
+  const coins = getUserCoins();
+  if (coins < WORLDWIDE_BOOT) {
+    showToast(`❌ Not enough coins! You need ${WORLDWIDE_BOOT} coins to play Worldwide. Click '+' to reload!`, 'error');
+    return;
+  }
+
   const { name, avatar } = getPlayerProfile();
   activeMatchmakingGame = gameType;
 
@@ -626,6 +650,15 @@ if (btnOpenSettings) btnOpenSettings.addEventListener('click', openProfileModal)
 if (btnAvatarClick) btnAvatarClick.addEventListener('click', openProfileModal);
 if (btnNameClick) btnNameClick.addEventListener('click', openProfileModal);
 if (btnScoreCardClick) btnScoreCardClick.addEventListener('click', openProfileModal);
+
+const btnAddCoins = document.getElementById('btn-add-coins');
+if (btnAddCoins) {
+  btnAddCoins.addEventListener('click', (e) => {
+    e.stopPropagation();
+    addCoins(1000);
+    showToast('🎁 Coin Reload! +1,000 Coins added to your bankroll!');
+  });
+}
 
 if (btnCloseProfile && modalProfileEdit) {
   btnCloseProfile.addEventListener('click', () => {
@@ -909,6 +942,7 @@ if (btnPlayAgain) {
 
 if (btnBackLobby) {
   btnBackLobby.addEventListener('click', () => {
+    isWorldwideGame = false;
     if (modalGameOver) modalGameOver.classList.add('hidden');
     switchScreen('lobby');
   });
@@ -1390,12 +1424,37 @@ function renderGameOverModal(state) {
   }
   window.soundFx.playVictory();
 
+  const isWorldwide = state.isWorldwide || isWorldwideGame;
+  const prizeBanner = document.getElementById('game-over-prize-banner');
+  if (prizeBanner) {
+    if (isWorldwide) {
+      prizeBanner.classList.remove('hidden');
+    } else {
+      prizeBanner.classList.add('hidden');
+    }
+  }
+
   // Populate Winners Podium
   podiumList.innerHTML = '';
   state.winners.forEach(w => {
     const item = document.createElement('div');
     const medals = ['🥇', '🥈', '🥉'];
     const medal = medals[w.rank - 1] || `#${w.rank}`;
+
+    let coinTag = '';
+    if (isWorldwide) {
+      if (state.gameType === 'rang') {
+        coinTag = '<span class="text-emerald-400 font-black font-mono">🪙 +1,000 (50%)</span>';
+      } else {
+        if (w.rank === 1) coinTag = '<span class="text-amber-300 font-black font-mono">🪙 +1,000 (50%)</span>';
+        else if (w.rank === 2) coinTag = '<span class="text-emerald-300 font-black font-mono">🪙 +600 (30%)</span>';
+        else if (w.rank === 3) coinTag = '<span class="text-sky-300 font-black font-mono">🪙 +400 (20%)</span>';
+        else coinTag = '<span class="text-slate-400 font-mono">0 Coins</span>';
+      }
+    } else {
+      coinTag = '<span class="text-emerald-400 font-bold font-mono">SAFE</span>';
+    }
+
     item.className = 'flex items-center justify-between p-2.5 rounded-lg bg-slate-900/80 border border-slate-800 text-xs';
     item.innerHTML = `
       <div class="flex items-center gap-2">
@@ -1403,7 +1462,7 @@ function renderGameOverModal(state) {
         <span class="font-bold text-white">${w.name}</span>
         ${w.isBot ? '<span class="text-[9px] bg-blue-600/80 px-1 rounded text-white font-bold">BOT</span>' : ''}
       </div>
-      <span class="text-emerald-400 font-bold font-mono">SAFE</span>
+      <div>${coinTag}</div>
     `;
     podiumList.appendChild(item);
   });
@@ -1415,15 +1474,41 @@ function renderGameOverModal(state) {
     loserName.innerText = 'Everyone is Safe!';
   }
 
-  // Award Coins to winner
-  const myWinnerRecord = state.winners.find(w => w.id === myPlayerId);
-  if (myWinnerRecord) {
-    if (myWinnerRecord.rank === 1) {
-      addCoins(5000);
-      showToast('👑 KING VICTORY! +5,000 Coins added!');
-    } else if (myWinnerRecord.rank === 2) {
-      addCoins(2500);
-      showToast('🥈 2nd Place! +2,500 Coins added!');
+  // Award Real Coins to player based on placement
+  const myWinnerRecord = state.winners ? state.winners.find(w => w.id === myPlayerId) : null;
+  if (isWorldwide) {
+    if (state.gameType === 'rang') {
+      if (myWinnerRecord) {
+        addCoins(1000);
+        showToast('👑 WINNING TEAM! +1,000 Coins won (50% Pot Share)!');
+      } else if (state.loser && state.loser.id === myPlayerId) {
+        showToast('💀 Losing Team: 0 Coins prize.');
+      }
+    } else {
+      if (myWinnerRecord) {
+        if (myWinnerRecord.rank === 1) {
+          addCoins(1000);
+          showToast('👑 KING VICTORY! +1,000 Coins won (50% Pot Share)!');
+        } else if (myWinnerRecord.rank === 2) {
+          addCoins(600);
+          showToast('🥈 2nd Place! +600 Coins won (30% Pot Share)!');
+        } else if (myWinnerRecord.rank === 3) {
+          addCoins(400);
+          showToast('🥉 3rd Place! +400 Coins won (20% Pot Share)!');
+        }
+      } else if (state.loser && state.loser.id === myPlayerId) {
+        showToast('💀 You are the Thulla! 0 Coins won.');
+      }
+    }
+  } else {
+    if (myWinnerRecord) {
+      if (myWinnerRecord.rank === 1) {
+        addCoins(250);
+        showToast('👑 King Practice Reward: +250 Coins added!');
+      } else if (myWinnerRecord.rank === 2) {
+        addCoins(100);
+        showToast('🥈 2nd Place Reward: +100 Coins added!');
+      }
     }
   }
 
@@ -1593,6 +1678,11 @@ socket.on('match_found', ({ roomId, gameType, playerId, isHost: hostStatus }) =>
   myPlayerId = playerId;
   currentRoomId = roomId;
   isHost = hostStatus;
+  isWorldwideGame = true;
+
+  // Deduct Entry Fee boot (500 coins)
+  deductCoins(WORLDWIDE_BOOT);
+  showToast(`🪙 ${WORLDWIDE_BOOT} Coins boot deducted! Prize Pool: 2,000 Coins!`);
 
   const modal = document.getElementById('modal-matchmaking');
   const statusText = document.getElementById('matchmaking-status-text');

@@ -51,8 +51,8 @@
           <!-- Live Coins Balance Chip -->
           <div class="flex items-center gap-1.5 mt-0.5 bg-amber-950/70 border border-amber-500/35 px-2 py-0.5 rounded-full w-fit">
             <span class="text-xs">🪙</span>
-            <span id="user-coins-display" class="font-black text-amber-300 font-mono text-xs">50,000</span>
-            <span class="text-[9px] text-amber-400 font-black">+</span>
+            <span id="user-coins-display" class="font-black text-amber-300 font-mono text-xs">5,000</span>
+            <button id="btn-add-coins" class="text-[9px] text-amber-400 hover:text-white font-black hover:scale-125 transition" title="Claim Free Reload">+</button>
           </div>
         </div>
       </div>
@@ -155,15 +155,31 @@
               </span>
             </div>
             <h4 class="text-xl font-black text-white group-hover:text-amber-400 transition mt-2">Thulla Worldwide</h4>
-            <p class="text-xs text-slate-300 mt-1 mb-4 leading-relaxed font-medium">
+            <p class="text-xs text-slate-300 mt-1 mb-3 leading-relaxed font-medium">
               Authentic 4-Player Thulla (13 cards each). Throw highest cards, avoid penalty tricks, and clear your hand!
             </p>
-            <div class="text-[11px] text-amber-200/90 bg-amber-500/10 p-2.5 rounded-xl mb-4 border border-amber-500/20 flex items-center gap-2 font-semibold">
-              <span class="text-sm">⚡</span> 4 Players • Instant Auto-Start on 4/4
+
+            <!-- Real Coin Buy-In & Pot -->
+            <div class="flex items-center justify-between text-[11px] font-bold bg-slate-950/80 border border-amber-500/30 px-3 py-1.5 rounded-xl mb-2 shadow-inner">
+              <span class="text-amber-300 flex items-center gap-1">
+                <span>🪙</span> Boot: <strong class="font-mono text-white text-xs">500</strong>
+              </span>
+              <div class="w-[1px] h-4 bg-amber-500/25"></div>
+              <span class="text-emerald-300 flex items-center gap-1">
+                <span>🏆</span> Pot: <strong class="font-mono text-emerald-400 text-xs">2,000 Coins</strong>
+              </span>
+            </div>
+
+            <!-- Placement Shares Breakdown -->
+            <div class="text-[10px] text-slate-300 bg-amber-500/10 p-2 rounded-xl mb-4 border border-amber-500/20 flex items-center justify-between font-semibold">
+              <span>🥇 1st: <strong class="text-amber-300">50%</strong></span>
+              <span>🥈 2nd: <strong class="text-slate-200">30%</strong></span>
+              <span>🥉 3rd: <strong class="text-amber-400">20%</strong></span>
+              <span class="text-red-400">💀 4th: <strong>0%</strong></span>
             </div>
           </div>
           <button id="btn-queue-thulla" class="thulla-btn-gold w-full py-3 text-xs sm:text-sm font-black flex items-center justify-center gap-2 uppercase tracking-wide">
-            <span>🌐</span> Find Thulla Match
+            <span>🌐</span> Play for 500 Coins
           </button>
         </div>
 
@@ -177,15 +193,31 @@
               </span>
             </div>
             <h4 class="text-xl font-black text-white group-hover:text-sky-400 transition mt-2">Bluff Worldwide</h4>
-            <p class="text-xs text-slate-300 mt-1 mb-4 leading-relaxed font-medium">
+            <p class="text-xs text-slate-300 mt-1 mb-3 leading-relaxed font-medium">
               4-Player Cheat / 420 tournament with players worldwide. Place face-down cards, bluff boldly or call your opponents!
             </p>
-            <div class="text-[11px] text-sky-200/90 bg-sky-500/10 p-2.5 rounded-xl mb-4 border border-sky-500/20 flex items-center gap-2 font-semibold">
-              <span class="text-sm">⚡</span> 4 Players • Instant Auto-Start on 4/4
+
+            <!-- Real Coin Buy-In & Pot -->
+            <div class="flex items-center justify-between text-[11px] font-bold bg-slate-950/80 border border-sky-500/30 px-3 py-1.5 rounded-xl mb-2 shadow-inner">
+              <span class="text-sky-300 flex items-center gap-1">
+                <span>🪙</span> Boot: <strong class="font-mono text-white text-xs">500</strong>
+              </span>
+              <div class="w-[1px] h-4 bg-sky-500/25"></div>
+              <span class="text-emerald-300 flex items-center gap-1">
+                <span>🏆</span> Pot: <strong class="font-mono text-emerald-400 text-xs">2,000 Coins</strong>
+              </span>
+            </div>
+
+            <!-- Placement Shares Breakdown -->
+            <div class="text-[10px] text-slate-300 bg-sky-500/10 p-2 rounded-xl mb-4 border border-sky-500/20 flex items-center justify-between font-semibold">
+              <span>🥇 1st: <strong class="text-sky-300">50%</strong></span>
+              <span>🥈 2nd: <strong class="text-slate-200">30%</strong></span>
+              <span>🥉 3rd: <strong class="text-sky-400">20%</strong></span>
+              <span class="text-red-400">💀 4th: <strong>0%</strong></span>
             </div>
           </div>
           <button id="btn-queue-bluff" class="thulla-btn-blue w-full py-3 text-xs sm:text-sm font-black flex items-center justify-center gap-2 uppercase tracking-wide">
-            <span>🌐</span> Find Bluff Match
+            <span>🌐</span> Play for 500 Coins
           </button>
         </div>
 
@@ -199,15 +231,29 @@
               </span>
             </div>
             <h4 class="text-xl font-black text-white group-hover:text-emerald-400 transition mt-2">Rang Worldwide</h4>
-            <p class="text-xs text-slate-300 mt-1 mb-4 leading-relaxed font-medium">
+            <p class="text-xs text-slate-300 mt-1 mb-3 leading-relaxed font-medium">
               Standard 4-Player Court Piece (Gandu Patta). Select the trump suit (Rang) with your partner and capture 7+ hands!
             </p>
-            <div class="text-[11px] text-emerald-200/90 bg-emerald-500/10 p-2.5 rounded-xl mb-4 border border-emerald-500/20 flex items-center gap-2 font-semibold">
-              <span class="text-sm">⚡</span> 4 Players (2v2) • Auto-Starts
+
+            <!-- Real Coin Buy-In & Pot -->
+            <div class="flex items-center justify-between text-[11px] font-bold bg-slate-950/80 border border-emerald-500/30 px-3 py-1.5 rounded-xl mb-2 shadow-inner">
+              <span class="text-emerald-300 flex items-center gap-1">
+                <span>🪙</span> Boot: <strong class="font-mono text-white text-xs">500</strong>
+              </span>
+              <div class="w-[1px] h-4 bg-emerald-500/25"></div>
+              <span class="text-emerald-300 flex items-center gap-1">
+                <span>🏆</span> Pot: <strong class="font-mono text-emerald-400 text-xs">2,000 Coins</strong>
+              </span>
+            </div>
+
+            <!-- Placement Shares Breakdown -->
+            <div class="text-[10px] text-slate-300 bg-emerald-500/10 p-2 rounded-xl mb-4 border border-emerald-500/20 flex items-center justify-between font-semibold">
+              <span>👑 Winning Team: <strong class="text-emerald-300">50% each</strong> (1,000)</span>
+              <span class="text-red-400">💀 Losing Team: <strong>0%</strong></span>
             </div>
           </div>
           <button id="btn-queue-rang" class="thulla-btn-green w-full py-3 text-xs sm:text-sm font-black flex items-center justify-center gap-2 uppercase tracking-wide">
-            <span>🌐</span> Find Rang Match
+            <span>🌐</span> Play for 500 Coins
           </button>
         </div>
       </div>
@@ -537,9 +583,15 @@
       </div>
 
       <h3 class="text-xl font-black text-white mb-1">Worldwide Matchmaking</h3>
-      <p id="matchmaking-game-label" class="text-xs font-bold text-amber-400 uppercase tracking-widest mb-4">
+      <p id="matchmaking-game-label" class="text-xs font-bold text-amber-400 uppercase tracking-widest mb-3">
         🎴 Thulla (4-Player Table)
       </p>
+
+      <!-- Real Coin Buy-In & Pot Info -->
+      <div class="flex items-center justify-between text-xs font-bold bg-amber-950/60 border border-amber-500/35 px-3.5 py-1.5 rounded-xl mb-4 text-center">
+        <span class="text-amber-300">🪙 Entry Boot: <strong>500 Coins</strong></span>
+        <span class="text-emerald-300">🏆 Total Pot: <strong>2,000 Coins</strong></span>
+      </div>
 
       <!-- Live Queue Status -->
       <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-3.5 mb-5 space-y-1.5">
@@ -814,7 +866,15 @@
     <div class="glass-panel w-full max-w-lg p-6 sm:p-8 text-center relative border border-amber-500/30">
       <div class="text-5xl mb-2">🏆</div>
       <h3 class="text-2xl sm:text-3xl font-black text-amber-400 mb-1">MATCH COMPLETED!</h3>
-      <p class="text-slate-400 text-xs sm:text-sm mb-6">Here are the final standings for this round:</p>
+      <p class="text-slate-400 text-xs sm:text-sm mb-4">Here are the final standings for this round:</p>
+
+      <!-- Prize Pool Banner (Worldwide Coin Matches) -->
+      <div id="game-over-prize-banner" class="hidden mb-4 p-3 rounded-xl bg-gradient-to-r from-amber-950/80 via-slate-900 to-amber-950/80 border-2 border-amber-500/40 flex items-center justify-between text-xs shadow-lg">
+        <span class="text-amber-300 font-extrabold flex items-center gap-1.5">
+          <span>🏆</span> Worldwide Prize Pool:
+        </span>
+        <span id="game-over-pot-amount" class="font-black text-emerald-300 font-mono text-sm">🪙 2,000 Coins</span>
+      </div>
 
       <!-- Winners Podium -->
       <div id="podium-list" class="space-y-2 mb-6 max-h-56 overflow-y-auto text-left">
